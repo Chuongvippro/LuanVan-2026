@@ -30,7 +30,7 @@ public class Recruiter {
     private String statusTrust;
 
     @OneToOne
-    // @MapsId
+    @MapsId
     @JoinColumn(name = "id")
     private User user;
 }

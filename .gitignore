@@ -1,0 +1,6 @@
+job_platform_fe/node_modules/
+job_platform_fe/dist/
+job_platform_fe/.env
+job_platform/target/
+job_platform/.idea/
+.vscode/

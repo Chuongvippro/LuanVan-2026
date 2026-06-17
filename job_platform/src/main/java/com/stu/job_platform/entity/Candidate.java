@@ -21,7 +21,7 @@ public class Candidate {
     private String skills;
 
     @OneToOne
-    // @MapsId 
+     @MapsId 
     @JoinColumn(name = "id")
     private User user;
 }
