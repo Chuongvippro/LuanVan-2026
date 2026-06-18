@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import Register from './page/register/Register';
 import Login from './page/login/Login'; // ◄ Import trang Login từ thư mục mới của mày nè
+import Profile from './page/proifle/Profile'; // ◄ Import trang Profile từ thư mục mới của mày nè
 import { checkToken } from './service/api'; // ◄ Import hàm quét mã tự động tối thượng vào
 
 function App() {
@@ -48,7 +49,7 @@ function App() {
         
         {/* Đường dẫn trang Đăng Nhập */}
         <Route path="/login" element={<Login />} />
-
+        <Route path="/profile" element={<Profile />} />
         {/* Mấy trang sau này mày làm thêm như Home hay Dashboard thì nhét ở dưới này */}
         {/* Ví dụ kiểm tra quyền hạn (Role-based Routing) ngay tại đây: */}
         {/* <Route path="/home" element={currentUser ? <Home /> : <Navigate to="/login" />} /> */}

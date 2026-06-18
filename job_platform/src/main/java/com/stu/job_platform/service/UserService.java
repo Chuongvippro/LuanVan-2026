@@ -77,10 +77,6 @@ public class UserService {
             // Đăng ký thành công tài khoản: +30 điểm
             initialPoint += 30;
 
-            // Có điền tên công ty: +10 điểm
-            if (request.getCompanyName() != null && !request.getCompanyName().trim().isEmpty()) {
-                initialPoint += 10;
-            }
 
             // Gọi hàm kiểm tra xem email công ty có phải hàng chính chủ doanh nghiệp không: +20 điểm
             if (isCompanyEmail(recruiter.getCompanyEmail())) {

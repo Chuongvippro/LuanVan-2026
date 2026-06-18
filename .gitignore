@@ -4,3 +4,4 @@ job_platform_fe/.env
 job_platform/target/
 job_platform/.idea/
 .vscode/
+**/.env

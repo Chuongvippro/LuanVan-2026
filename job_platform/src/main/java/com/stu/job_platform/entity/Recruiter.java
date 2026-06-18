@@ -21,13 +21,13 @@ public class Recruiter {
     private String companyEmail;
 
     @Column(name = "website_url")
-    private String websiteUrl;
+    private String websiteUrl; // ◄ Khớp chuẩn website_url
 
     private String logo;
     private Integer point;
 
     @Column(name = "status_trust")
-    private String statusTrust;
+    private String statusTrust; // ◄ Khớp chuẩn status_trust ('pending', 'verified', 'banned')
 
     @OneToOne
     @MapsId
