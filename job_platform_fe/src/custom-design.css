@@ -1,0 +1,471 @@
+/* CUSTOM DESIGN CHO RECRUITER & JOB DETAIL */
+
+/* --- TỔNG QUAN --- */
+.page-container {
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+.page-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+  padding: 40px;
+  border: 1px solid #f0f0f0;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.section-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #121212;
+  margin-bottom: 8px;
+}
+
+.section-subtitle {
+  color: #666;
+  font-size: 16px;
+}
+
+/* --- RECRUITER DASHBOARD --- */
+.data-table {
+  width: 100%;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  overflow: hidden;
+}
+
+.data-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  background: #f8f9fa;
+  padding: 16px 20px;
+  text-align: left;
+  font-weight: 600;
+  color: #444;
+  border-bottom: 2px solid #eee;
+}
+
+.data-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
+}
+
+.data-table tr:hover {
+  background: #fdfdfd;
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.badge-active {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.badge-inactive {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #555;
+}
+
+.btn-ghost:hover {
+  background: #f0f0f0;
+  color: #121212;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
+/* --- JOB DETAIL --- */
+.job-detail-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 30px;
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 20px;
+  align-items: start;
+}
+
+@media (max-width: 992px) {
+  .job-detail-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.job-main-content {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  padding: 40px;
+  border: 1px solid #eaeaea;
+}
+
+.job-sidebar {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  padding: 30px;
+  border: 1px solid #eaeaea;
+  position: sticky;
+  top: 100px;
+}
+
+.company-logo-large {
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, #fdfdfd, #f0f0f0);
+  border: 1px solid #ddd;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  font-weight: 700;
+  color: #ed1b2f;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.job-detail-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: #1a1a1a;
+  line-height: 1.3;
+  margin-bottom: 12px;
+}
+
+.company-name-highlight {
+  font-size: 18px;
+  color: #555;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.job-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 40px;
+  padding-bottom: 30px;
+  border-bottom: 1px dashed #ddd;
+}
+
+.job-tag {
+  background: #f4f6f8;
+  color: #444;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #eee;
+}
+
+.job-section {
+  margin-bottom: 40px;
+}
+
+.job-section h3 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #121212;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.job-section-content {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #444;
+  white-space: pre-wrap;
+}
+
+.sidebar-box {
+  margin-bottom: 30px;
+}
+
+.sidebar-stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 15px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.sidebar-stat:last-child {
+  border-bottom: none;
+}
+
+.sidebar-stat-label {
+  color: #666;
+  font-size: 15px;
+}
+
+.sidebar-stat-value {
+  font-weight: 600;
+  color: #121212;
+  font-size: 15px;
+}
+
+.apply-button-large {
+  width: 100%;
+  padding: 16px;
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 8px 20px rgba(237, 27, 47, 0.3);
+  transition: all 0.3s ease;
+}
+
+.apply-button-large:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(237, 27, 47, 0.4);
+}
+
+/* --- POST JOB MODIFICATIONS --- */
+.post-job-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+  background: #fafafa;
+  padding: 30px;
+  border-radius: 12px;
+  border: 1px solid #eee;
+  margin-bottom: 30px;
+}
+
+.post-job-full {
+  grid-column: 1 / -1;
+}
+
+.form-label {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.form-input-premium {
+  width: 100%;
+  padding: 14px 18px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: all 0.3s;
+  background: #fff;
+}
+
+.form-input-premium:focus {
+  border-color: #ed1b2f;
+  box-shadow: 0 0 0 4px rgba(237, 27, 47, 0.1);
+  outline: none;
+}
+
+textarea.form-input-premium {
+  min-height: 150px;
+  resize: vertical;
+}
+
+/* --- AI CHAT WIDGET --- */
+.ai-widget-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  font-size: 28px;
+  box-shadow: 0 4px 15px rgba(237, 27, 47, 0.4);
+  cursor: pointer;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.ai-widget-btn:hover {
+  transform: scale(1.1);
+}
+
+.ai-chat-drawer {
+  position: fixed;
+  bottom: 100px;
+  right: 30px;
+  width: 380px;
+  height: 550px;
+  max-height: calc(100vh - 120px);
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  z-index: 9999;
+  transform: translateY(20px);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  border: 1px solid #eee;
+}
+
+.ai-chat-drawer.open {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ai-chat-header {
+  background: var(--primary-color);
+  color: white;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ai-chat-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-chat-header .btn-ghost {
+  color: white;
+  opacity: 0.8;
+  padding: 4px 8px;
+}
+
+.ai-chat-header .btn-ghost:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.ai-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f9f9f9;
+}
+
+.ai-message {
+  max-width: 85%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+.ai-message.user {
+  background: var(--primary-color);
+  color: white;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+.ai-message.assistant {
+  background: white;
+  color: #333;
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  border: 1px solid #eee;
+}
+
+.ai-chat-input {
+  display: flex;
+  padding: 15px;
+  background: white;
+  border-top: 1px solid #eee;
+  gap: 10px;
+}
+
+.ai-chat-input input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #ddd;
+  border-radius: 24px;
+  outline: none;
+  transition: border-color 0.2s;
+  font-size: 14px;
+}
+
+.ai-chat-input input:focus {
+  border-color: var(--primary-color);
+}
+
+.ai-chat-input button {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+
+.ai-chat-input button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.ai-chat-input button:not(:disabled):hover {
+  opacity: 0.9;
+}
+

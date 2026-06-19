@@ -8,6 +8,18 @@ const api = axios.create({
   },
 });
 
+// Thêm interceptor để tự động gắn token vào header của mọi request
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 // 2. Hàm Helper tự chế để giải mã phần mã hóa (Payload) của JWT lấy id, name, role, exp
 export const decodeToken = (token) => {
   if (!token) return null;
@@ -20,7 +32,11 @@ export const decodeToken = (token) => {
         .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
         .join('')
     );
-    return JSON.parse(jsonPayload);
+    const payload = JSON.parse(jsonPayload);
+    if (payload.sub && !payload.email) {
+      payload.email = payload.sub;
+    }
+    return payload;
   } catch (error) {
     console.error('Lỗi giải mã chuỗi Token lỏ:', error);
     return null;
