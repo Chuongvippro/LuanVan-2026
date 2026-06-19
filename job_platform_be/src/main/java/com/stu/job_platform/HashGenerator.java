@@ -1,3 +1,4 @@
+package com.stu.job_platform;
 import org.mindrot.jbcrypt.BCrypt;
 public class HashGenerator {
     public static void main(String[] args) {

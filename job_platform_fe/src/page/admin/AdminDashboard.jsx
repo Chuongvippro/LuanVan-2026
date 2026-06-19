@@ -7,81 +7,141 @@ function AdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('stats');
   const [stats, setStats] = useState({});
-  const [users, setUsers] = useState([]);
+  const [candidates, setCandidates] = useState([]);
+  const [recruiters, setRecruiters] = useState([]);
   const [jobs, setJobs] = useState([]);
-  const [bugReports, setBugReports] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [errorLogs, setErrorLogs] = useState([]);
 
-  const token = localStorage.getItem('accessToken');
-  const user = token ? decodeToken(token) : null;
+  const [user] = useState(() => {
+    const token = localStorage.getItem('accessToken');
+    return token ? decodeToken(token) : null;
+  });
 
-  useEffect(() => {
-    if (!user || user.role !== 'admin') { navigate('/login'); return; }
-    fetchStats();
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === 'users') fetchUsers();
-    else if (activeTab === 'jobs') fetchJobs();
-    else if (activeTab === 'bugs') fetchBugReports();
-  }, [activeTab]);
+  // ===== FETCH FUNCTIONS =====
 
   const fetchStats = async () => {
     try {
       const res = await api.get('/admin/stats');
-      if (res.data.success) setStats(res.data.data);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+      if (res.data?.success) setStats(res.data.data);
+    } catch (err) {
+      console.error(err);
+      alert('Không thể tải thống kê!');
+    }
   };
 
-  const fetchUsers = async () => {
+  const fetchCandidates = async () => {
     try {
-      const res = await api.get('/admin/users');
-      if (res.data.success) setUsers(res.data.data);
-    } catch (err) { console.error(err); }
+      const res = await api.get('/admin/users/candidates');
+      console.log('[candidates raw]', res.data.data); // debug tạm
+      if (res.data?.success) setCandidates(res.data.data || []);
+    } catch (err) {
+      console.error(err);
+      alert('Không thể tải danh sách ứng viên!');
+    }
+  };
+
+  const fetchRecruiters = async () => {
+    try {
+      const res = await api.get('/admin/users/recruiters');
+      console.log('[recruiters raw]', res.data.data); // debug tạm
+      if (res.data?.success) setRecruiters(res.data.data || []);
+    } catch (err) {
+      console.error(err);
+      alert('Không thể tải danh sách nhà tuyển dụng!');
+    }
   };
 
   const fetchJobs = async () => {
     try {
       const res = await api.get('/admin/jobs?size=50');
-      if (res.data.success) setJobs(res.data.data?.content || []);
-    } catch (err) { console.error(err); }
+      if (res.data?.success) setJobs(res.data.data?.content || res.data.data || []);
+    } catch (err) {
+      console.error(err);
+      alert('Không thể tải danh sách bài đăng!');
+    }
   };
 
-  const fetchBugReports = async () => {
+  const fetchErrorLogs = async () => {
     try {
-      const res = await api.get('/admin/bug-reports');
-      if (res.data.success) setBugReports(res.data.data);
-    } catch (err) { console.error(err); }
+      const res = await api.get('/admin/error-logs');
+      if (res.data?.success) setErrorLogs(res.data.data || []);
+    } catch (err) {
+      console.error(err);
+      alert('Không thể tải nhật ký lỗi!');
+    }
   };
 
-  const toggleUserStatus = async (userId, currentStatus) => {
+  // ===== ACTION FUNCTIONS =====
+
+  const toggleUserStatus = async (userId, currentStatus, type) => {
     try {
-      await api.put(`/admin/users/${userId}/status`, { status: currentStatus === 1 ? 0 : 1 });
-      fetchUsers();
-    } catch (err) { console.error(err); }
+      const nextStatus = currentStatus === 1 ? 0 : 1;
+      await api.put(`/admin/users/${userId}/status`, { status: nextStatus });
+      if (type === 'candidate') fetchCandidates();
+      else fetchRecruiters();
+    } catch (err) {
+      console.error(err);
+      alert('Cập nhật trạng thái thất bại!');
+    }
   };
 
   const toggleJobStatus = async (jobId, status) => {
     try {
       await api.put(`/admin/jobs/${jobId}/status`, { status });
       fetchJobs();
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+      alert('Cập nhật trạng thái bài đăng thất bại!');
+    }
   };
 
-  const updateBugStatus = async (bugId, status) => {
+  const updateLogStatus = async (logId, status) => {
     try {
-      await api.put(`/admin/bug-reports/${bugId}/status`, { status });
-      fetchBugReports();
-    } catch (err) { console.error(err); }
+      await api.put(`/admin/error-logs/${logId}/status`, { status });
+      fetchErrorLogs();
+    } catch (err) {
+      console.error(err);
+      alert('Cập nhật trạng thái lỗi thất bại!');
+    }
   };
+
+  // ===== HOOKS =====
+
+  useEffect(() => {
+    if (!user || user.role?.toLowerCase() !== 'admin') {
+      navigate('/login');
+      return;
+    }
+    fetchStats();
+  }, [navigate, user]);
+
+  useEffect(() => {
+    if (activeTab === 'candidates') fetchCandidates();
+    else if (activeTab === 'recruiters') fetchRecruiters();
+    else if (activeTab === 'jobs') fetchJobs();
+    else if (activeTab === 'bugs') fetchErrorLogs();
+  }, [activeTab]);
 
   const menuItems = [
-    { key: 'stats', icon: '📊', label: 'Thống kê tổng quan' },
-    { key: 'users', icon: '👥', label: 'Quản lý tài khoản' },
-    { key: 'jobs', icon: '📋', label: 'Quản lý bài đăng' },
-    { key: 'bugs', icon: '🐛', label: 'Báo cáo lỗi' },
+    { key: 'stats',      icon: '📊', label: 'Thống kê tổng quan' },
+    { key: 'candidates', icon: '👨‍🎓', label: 'Quản lý Ứng viên' },
+    { key: 'recruiters', icon: '🏢', label: 'Quản lý Nhà tuyển dụng' },
+    { key: 'jobs',       icon: '📋', label: 'Quản lý bài đăng' },
+    { key: 'bugs',       icon: '🐛', label: 'Nhật ký lỗi hệ thống' },
   ];
+
+  // Helper hiển thị statusTrust recruiter
+  const trustLabel = (val) => {
+    if (!val) return 'Chưa có';
+    if (val === 'verified') return '✅ Đã xác minh';
+    if (val === 'banned')   return '🚫 Bị cấm';
+    return `⏳ ${val}`;
+  };
+  const trustBadge = (val) => {
+    if (val === 'verified') return 'badge-active';
+    if (val === 'banned')   return 'badge-inactive';
+    return 'badge-pending';
+  };
 
   return (
     <div className="admin-layout">
@@ -101,9 +161,9 @@ function AdminDashboard() {
         ))}
       </aside>
 
-      {/* Content */}
       <main className="admin-content">
-        {/* THỐNG KÊ */}
+
+        {/* TAB 1: THỐNG KÊ */}
         {activeTab === 'stats' && (
           <>
             <h2 style={{ marginBottom: '24px' }}>📊 Thống kê tổng quan</h2>
@@ -122,16 +182,16 @@ function AdminDashboard() {
               </div>
               <div className="stat-card">
                 <div className="stat-value">{stats.pendingBugs || 0}</div>
-                <div className="stat-label">🐛 Báo cáo lỗi chờ xử lý</div>
+                <div className="stat-label">🐛 Lỗi hệ thống chờ xử lý</div>
               </div>
             </div>
           </>
         )}
 
-        {/* QUẢN LÝ TÀI KHOẢN */}
-        {activeTab === 'users' && (
+        {/* TAB 2: ỨNG VIÊN */}
+        {activeTab === 'candidates' && (
           <>
-            <h2 style={{ marginBottom: '24px' }}>👥 Quản lý tài khoản</h2>
+            <h2 style={{ marginBottom: '24px' }}>👨‍🎓 Quản lý tài khoản Ứng viên</h2>
             <div className="data-table">
               <table>
                 <thead>
@@ -139,25 +199,26 @@ function AdminDashboard() {
                     <th>ID</th>
                     <th>Tên</th>
                     <th>Email</th>
-                    <th>Vai trò</th>
-                    <th>Trạng thái</th>
+                    <th>Trạng thái tài khoản</th>
                     <th>Hành động</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map(u => (
+                  {candidates.map(u => (
                     <tr key={u.id}>
                       <td>{u.id}</td>
                       <td>{u.name}</td>
                       <td>{u.email}</td>
-                      <td><span className="badge badge-active">{u.role}</span></td>
                       <td>
                         <span className={`badge ${u.status === 1 ? 'badge-active' : 'badge-inactive'}`}>
                           {u.status === 1 ? 'Hoạt động' : 'Đã khóa'}
                         </span>
                       </td>
                       <td>
-                        <button className="btn btn-ghost btn-sm" onClick={() => toggleUserStatus(u.id, u.status)}>
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => toggleUserStatus(u.id, u.status, 'candidate')}
+                        >
                           {u.status === 1 ? '🔒 Khóa' : '🔓 Mở'}
                         </button>
                       </td>
@@ -169,7 +230,65 @@ function AdminDashboard() {
           </>
         )}
 
-        {/* QUẢN LÝ BÀI ĐĂNG */}
+        {/* TAB 3: NHÀ TUYỂN DỤNG */}
+        {activeTab === 'recruiters' && (
+          <>
+            <h2 style={{ marginBottom: '24px' }}>🏢 Quản lý tài khoản Nhà tuyển dụng</h2>
+            <div className="data-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Tên</th>
+                    <th>Email</th>
+                    <th>Tên công ty</th>
+                    <th>Mã số thuế</th>
+                    <th>Xác minh DN</th>
+                    <th>TK</th>
+                    <th>Hành động</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recruiters.map(u => (
+                    <tr key={u.id}>
+                      <td>{u.id}</td>
+                      <td>{u.name}</td>
+                      <td>{u.email}</td>
+                      <td><strong>{u.companyName || '-'}</strong></td>
+                      <td>
+                        <code style={{ background: '#f4f4f5', padding: '2px 6px', borderRadius: '4px' }}>
+                          {u.taxCode || '-'}
+                        </code>
+                      </td>
+                      <td>
+                        {/* statusTrust từ bảng recruiters */}
+                        <span className={`badge ${trustBadge(u.statusTrust)}`}>
+                          {trustLabel(u.statusTrust)}
+                        </span>
+                      </td>
+                      <td>
+                        {/* status từ bảng users: 1=active, 0=locked */}
+                        <span className={`badge ${u.status === 1 ? 'badge-active' : 'badge-inactive'}`}>
+                          {u.status === 1 ? 'Hoạt động' : 'Đã khóa'}
+                        </span>
+                      </td>
+                      <td>
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => toggleUserStatus(u.id, u.status, 'recruiter')}
+                        >
+                          {u.status === 1 ? '🔒 Khóa' : '🔓 Mở'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
+        {/* TAB 4: BÀI ĐĂNG */}
         {activeTab === 'jobs' && (
           <>
             <h2 style={{ marginBottom: '24px' }}>📋 Quản lý bài đăng</h2>
@@ -196,7 +315,10 @@ function AdminDashboard() {
                         </span>
                       </td>
                       <td>
-                        <button className="btn btn-ghost btn-sm" onClick={() => toggleJobStatus(j.id, j.status === 1 ? 0 : 1)}>
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => toggleJobStatus(j.id, j.status === 1 ? 0 : 1)}
+                        >
                           {j.status === 1 ? '👁️ Ẩn' : '👁️ Hiện'}
                         </button>
                       </td>
@@ -208,38 +330,48 @@ function AdminDashboard() {
           </>
         )}
 
-        {/* BÁO CÁO LỖI */}
+        {/* TAB 5: NHẬT KÝ LỖI */}
         {activeTab === 'bugs' && (
           <>
-            <h2 style={{ marginBottom: '24px' }}>🐛 Báo cáo lỗi</h2>
+            <h2 style={{ marginBottom: '24px' }}>🐛 Nhật ký lỗi AI & hệ thống</h2>
             <div className="data-table">
               <table>
                 <thead>
                   <tr>
-                    <th>ID</th>
-                    <th>Tiêu đề</th>
-                    <th>Mô tả</th>
+                    <th>ID Log</th>
+                    <th>User ID</th>
+                    <th>Mã lỗi</th>
+                    <th>Chi tiết lỗi</th>
                     <th>Trạng thái</th>
                     <th>Hành động</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {bugReports.map(bug => (
-                    <tr key={bug.id}>
-                      <td>{bug.id}</td>
-                      <td>{bug.title}</td>
-                      <td style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{bug.description}</td>
+                  {errorLogs.map(log => (
+                    <tr key={log.id}>
+                      <td>{log.id}</td>
+                      <td><strong>{log.user ? log.user.id : 'N/A'}</strong></td>
                       <td>
-                        <span className={`badge ${bug.status === 'resolved' ? 'badge-active' : 'badge-pending'}`}>
-                          {bug.status === 'resolved' ? 'Đã xử lý' : bug.status === 'rejected' ? 'Từ chối' : 'Đang chờ'}
+                        <span className="badge" style={{ background: '#ffebee', color: '#c62828' }}>
+                          {log.errorName}
                         </span>
                       </td>
-                      <td style={{ display: 'flex', gap: '4px' }}>
-                        {bug.status === 'pending' && (
-                          <>
-                            <button className="btn btn-ghost btn-sm" onClick={() => updateBugStatus(bug.id, 'resolved')}>✅</button>
-                            <button className="btn btn-ghost btn-sm" onClick={() => updateBugStatus(bug.id, 'rejected')}>❌</button>
-                          </>
+                      <td style={{ maxWidth: '350px', whiteSpace: 'normal', wordBreak: 'break-word' }}>
+                        {log.notes}
+                      </td>
+                      <td>
+                        <span className={`badge ${log.status === 'resolved' ? 'badge-active' : 'badge-pending'}`}>
+                          {log.status === 'resolved' ? 'Đã xử lý' : 'Đang chờ'}
+                        </span>
+                      </td>
+                      <td>
+                        {log.status === 'pending' && (
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            onClick={() => updateLogStatus(log.id, 'resolved')}
+                          >
+                            ✔️ Xác nhận sửa
+                          </button>
                         )}
                       </td>
                     </tr>
@@ -249,6 +381,7 @@ function AdminDashboard() {
             </div>
           </>
         )}
+
       </main>
     </div>
   );

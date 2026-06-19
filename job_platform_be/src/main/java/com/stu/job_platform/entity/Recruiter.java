@@ -11,6 +11,7 @@ public class Recruiter {
     @Id
     private Integer id;
 
+
     @Column(name = "company_name")
     private String companyName;
 

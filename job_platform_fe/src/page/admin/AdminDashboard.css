@@ -172,3 +172,10 @@
 .btn-sm:hover {
   background-color: #e2e8f0;
 }
+
+/* Badge trạng thái chờ duyệt hệ thống */
+.badge-pending {
+  background-color: #fffde7; /* Nền vàng nhạt */
+  color: #f57f17;            /* Chữ cam/vàng đậm đậm tí nhìn cho rõ */
+  border: 1px solid #fef08a;
+}

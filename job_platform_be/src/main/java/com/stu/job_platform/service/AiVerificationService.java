@@ -1,13 +1,17 @@
 package com.stu.job_platform.service;
 
 import io.github.cdimascio.dotenv.Dotenv;
+import jakarta.persistence.criteria.CriteriaBuilder.In;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Service;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.client.RestTemplate;
-
 import com.stu.job_platform.entity.Recruiter;
+import com.stu.job_platform.repository.RecruiterRepository;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import java.util.*;
 
@@ -15,6 +19,12 @@ import java.util.*;
 public class AiVerificationService {
     
     private final String apiKey;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private RecruiterRepository recruiterRepository;
 
     public AiVerificationService() {
         Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
@@ -29,8 +39,7 @@ public class AiVerificationService {
         this.apiKey = key;
     }
 
-    // Hàm cào chữ thô từ Web
-    public String scrapeWebsiteText(String url) {
+    public String scrapeWebsiteText(String url, Integer userId) {
         try {
             Document doc = Jsoup.connect(url)
                     .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
@@ -39,19 +48,23 @@ public class AiVerificationService {
                     .get();
             return doc.select("h1, h2, footer, p").text();
         } catch (Exception e) {
+            try{
+                String sql = "Insert into error_logs (user_id, error_name, notes, status) values (?, ?, ?, ?)";
+                jdbcTemplate.update(sql, userId, "WEB_BLOCKED_BY_WALL", "Website chặn bot cào dữ liệu tại URL: " + url+ ". Chi tiết" + e.getMessage(), "pending");
+            } catch (Exception ex) {
+                System.err.println("Không thể lưu log lỗi vào db: " + ex.getMessage());
+            }
             return "WEB_BLOCKED_BY_WALL";
         }
     }
 
-    // HÀM GỌI AI XÁC THỰC RIÊNG BIỆT TỪNG TRƯỜNG DỮ LIỆU
     public String verifyFieldWithAi(String fieldType, String value, Recruiter rec, String companyEmail) {
         String apiUrl = "https://api.groq.com/openai/v1/chat/completions";
         String prompt = "";
 
         if ("companyName".equals(fieldType)) {
             String emailDomain = (companyEmail != null && companyEmail.contains("@")) 
-                                ? companyEmail.substring(companyEmail.indexOf("@") + 1) 
-                                : "n/a";
+                                ? companyEmail.substring(companyEmail.indexOf("@") + 1) : "n/a";
 
             prompt = String.format(
                 "Mày là hệ thống AI kiểm định thông tin doanh nghiệp Việt Nam.\n" +
@@ -68,10 +81,8 @@ public class AiVerificationService {
                 value, rec.getTaxCode(), emailDomain
             );
         } else if ("taxCode".equals(fieldType)) {
-            // Trích xuất domain từ email để đối chiếu
             String emailDomain = (companyEmail != null && companyEmail.contains("@")) 
-                                 ? companyEmail.substring(companyEmail.indexOf("@") + 1) 
-                                 : "n/a";
+                                 ? companyEmail.substring(companyEmail.indexOf("@") + 1) : "n/a";
 
             prompt = String.format(
                 "Mày là chuyên gia thẩm định doanh nghiệp. Dữ liệu đầu vào: [Tên công ty: '%s', MST cần check: '%s', Domain email: '%s']\n\n" +
@@ -84,23 +95,111 @@ public class AiVerificationService {
                 "Trả về JSON chuẩn: {\"match_percentage\": ..., \"reason\": \"<lý do chi tiết>\"}",
                 rec.getCompanyName(), value, emailDomain, rec.getCompanyName(), emailDomain
             );
-        }else if ("websiteUrl".equals(fieldType)) {
-            String emailDomain = (companyEmail != null && companyEmail.contains("@")) 
-                                ? companyEmail.substring(companyEmail.indexOf("@") + 1) 
-                                : "n/a";
+        } else if ("websiteUrl".equals(fieldType)) {
+
+            String emailDomain = (companyEmail != null && companyEmail.contains("@"))
+                    ? companyEmail.substring(companyEmail.indexOf("@") + 1)
+                    : "n/a";
+
+            String websiteDomain = value
+                    .replace("https://", "")
+                    .replace("http://", "")
+                    .replace("www.", "");
+
+            if (websiteDomain.contains("/")) {
+                websiteDomain = websiteDomain.substring(0, websiteDomain.indexOf("/"));
+            }
+
+            // Chặn MXH
+            List<String> socialDomains = Arrays.asList(
+                    "facebook.com",
+                    "linkedin.com",
+                    "zalo.me",
+                    "tiktok.com",
+                    "instagram.com",
+                    "youtube.com",
+                    "x.com",
+                    "twitter.com"
+            );
+
+            for (String social : socialDomains) {
+                if (websiteDomain.contains(social)) {
+                    return """
+                    {
+                    "match_percentage": 0,
+                    "reason": "Website nhập vào là mạng xã hội hoặc nền tảng trung gian, không phải website doanh nghiệp."
+                    }
+                    """;
+                }
+            }
+
+            // Cào dữ liệu website
+            String websiteContent = scrapeWebsiteText(value, rec.getId());
+
+            if ("WEB_BLOCKED_BY_WALL".equals(websiteContent)) {
+
+                String status = rec.getStatusTrust();
+
+                if (status == null) {
+                    status = "website_pending";
+                } else if (!status.contains("website_pending")) {
+                    status += ",website_pending";
+                }
+
+                rec.setStatusTrust(status);
+                recruiterRepository.save(rec);
+
+                return """
+                {
+                "match_percentage": 50,
+                "reason":"Website chặn truy cập tự động. Chờ admin kiểm duyệt thủ công."
+                }
+                """;
+            }
 
             prompt = String.format(
-                "Mày là chuyên gia thẩm định website doanh nghiệp.\n" +
-                "Dữ liệu gốc: [Tên công ty: '%s', MST: '%s', Domain email: '%s']\n" +
-                "Website cần thẩm định: \"%s\"\n\n" +
-                "YÊU CẦU BẮT BUỘC:\n" +
-                "1. Nếu website này là MXH, trang cá nhân, hay bất kỳ link nào không thuộc quyền sở hữu của công ty '%s' (dựa trên tên miền) -> match_percentage: 0.\n" +
-                "2. Website doanh nghiệp chuẩn phải có domain khớp với domain email '%s'. Nếu khác domain -> match_percentage: 0.\n" +
-                "3. Nếu là link của các nền tảng chat, MXH, hoặc trang trung gian -> match_percentage: 0.\n" +
-                "4. Nếu thông tin khớp và là website chính thức -> match_percentage: 100.\n" +
-                "Trả về JSON chuẩn: {\"match_percentage\": ..., \"reason\": \"<lý do cụ thể>\"}",
-                rec.getCompanyName(), rec.getTaxCode(), emailDomain, value, rec.getCompanyName(), emailDomain
+                    """
+                    Mày là chuyên gia thẩm định website doanh nghiệp.
+
+                    Dữ liệu gốc:
+                    - Tên công ty: "%s"
+                    - MST: "%s"
+                    - Domain email: "%s"
+
+                    Website cần thẩm định:
+                    "%s"
+
+                    Domain website:
+                    "%s"
+
+                    Nội dung website đã thu thập:
+
+                    %s
+
+                    YÊU CẦU BẮT BUỘC:
+
+                    1. Xác định website này có phải website chính thức của công ty hay không.
+                    2. Nếu website là MXH, website trung gian hoặc không liên quan công ty -> match_percentage = 0.
+                    3. Đối chiếu tên công ty với nội dung website.
+                    4. Đối chiếu domain website với domain email.
+                    5. Nếu website thể hiện rõ đây là website chính thức của công ty và thông tin đồng nhất -> match_percentage = 100.
+
+                    Chỉ trả về JSON:
+
+                    {
+                    "match_percentage": <0-100>,
+                    "reason": "<giải thích bằng tiếng Việt>"
+                    }
+                    """,
+                    rec.getCompanyName(),
+                    rec.getTaxCode(),
+                    emailDomain,
+                    value,
+                    websiteDomain,
+                    websiteContent
             );
+        }else {
+            return "{\"match_percentage\":0,\"reason\":\"Invalid fieldType\"}";
         }
 
         RestTemplate restTemplate = new RestTemplate();
@@ -111,13 +210,13 @@ public class AiVerificationService {
         Map<String, Object> requestBody = Map.of(
             "model", "llama-3.3-70b-versatile", 
             "messages", List.of(Map.of("role", "user", "content", prompt)),
-            "temperature", 0.1 // Khóa não AI chạy nghiêm túc tuyệt đối
+            "temperature", 0.1
         );
 
         try {
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
             ResponseEntity<Map> response = restTemplate.postForEntity(apiUrl, entity, Map.class);
-            Map<?, ?> responseBody = response.getBody();
+            Map<String, Object> responseBody = (Map<String, Object>) response.getBody();
             List<?> choices = (List<?>) responseBody.get("choices");
             Map<?, ?> firstChoice = (Map<?, ?>) choices.get(0);
             Map<?, ?> message = (Map<?, ?>) firstChoice.get("message");

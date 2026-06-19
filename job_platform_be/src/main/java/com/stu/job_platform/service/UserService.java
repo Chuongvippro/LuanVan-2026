@@ -8,6 +8,7 @@ import com.stu.job_platform.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.mindrot.jbcrypt.BCrypt;
@@ -17,6 +18,9 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder; // Sử dụng PasswordEncoder của Spring Security để mã hóa mật khẩu  
 
     @PersistenceContext
     private EntityManager entityManager; 
@@ -34,8 +38,8 @@ public class UserService {
         user.setEmail(request.getEmail());
         
         // Mã hóa mật khẩu bằng BCrypt với 12 vòng lặp (vừa bảo mật vừa ghi điểm luận văn)
-        String hashPasword = BCrypt.hashpw(request.getPassword(), BCrypt.gensalt(12)); 
-        user.setPassword(hashPasword); 
+        String hashPassword = passwordEncoder.encode(request.getPassword()); 
+        user.setPassword(hashPassword); 
         user.setRole(request.getRole().toLowerCase());
         user.setStatus(1); 
 
@@ -62,34 +66,28 @@ public class UserService {
             recruiter.setUser(savedUser);       
             recruiter.setId(savedUser.getId()); 
             
-            // Lấy dữ liệu riêng của Recruiter từ DTO (Đã bỏ taxCode và websiteUrl)
-            recruiter.setCompanyName(request.getCompanyName());
+            // Nhận Tên công ty từ DTO gửi lên
+            recruiter.setCompanyName(request.getCompanyName() != null && !request.getCompanyName().isEmpty() 
+                    ? request.getCompanyName() : null);
             
-            // Nếu không nhập email công ty riêng, lấy luôn email gốc làm email công ty
+            // Các trường doanh nghiệp còn lại để cập nhật sau ở Profile
+            recruiter.setTaxCode(null);
+            recruiter.setWebsiteUrl(null);
+            
+            // Xử lý Email công ty
             String compEmail = request.getCompanyEmail();
             recruiter.setCompanyEmail(compEmail != null && !compEmail.isEmpty() ? compEmail : request.getEmail());
             
-            // -------------------------------------------------------------
-            // 🛡️ LUỒNG TÍNH ĐIỂM UY TÍN CHỐNG SPAM DOANH NGHIỆP GIẢ DANH
-            // -------------------------------------------------------------
-            int initialPoint = 0;
-
-            // Đăng ký thành công tài khoản: +30 điểm
-            initialPoint += 30;
-
-
-            // Gọi hàm kiểm tra xem email công ty có phải hàng chính chủ doanh nghiệp không: +20 điểm
+            // --- LUỒNG TÍNH ĐIỂM UY TÍN ---
+            int initialPoint = 30; // Đăng ký thành công: +30 điểm
             if (isCompanyEmail(recruiter.getCompanyEmail())) {
-                initialPoint += 20; 
+                initialPoint += 20; // Đuôi mail công ty chính chủ: +20 điểm
             }
-
-            recruiter.setPoint(initialPoint); // Gán tổng điểm tính được vào biến point
-            // -------------------------------------------------------------
+            recruiter.setPoint(initialPoint);
             
-            recruiter.setStatusTrust("pending"); // Mặc định chờ duyệt
-            
-            entityManager.persist(recruiter); // Ép lệnh INSERT lưu vô DB bảng con
-        } else if (!"admin".equalsIgnoreCase(savedUser.getRole())) {
+            recruiter.setStatusTrust("pending"); 
+            entityManager.persist(recruiter); 
+        }else if (!"admin".equalsIgnoreCase(savedUser.getRole())) {
             return "Vai trò không hợp lệ!";
         }
 
