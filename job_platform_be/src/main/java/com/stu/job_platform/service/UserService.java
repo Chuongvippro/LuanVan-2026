@@ -81,7 +81,7 @@ public class UserService {
             // --- LUỒNG TÍNH ĐIỂM UY TÍN ---
             int initialPoint = 30; // Đăng ký thành công: +30 điểm
             if (isCompanyEmail(recruiter.getCompanyEmail())) {
-                initialPoint += 20; // Đuôi mail công ty chính chủ: +20 điểm
+                initialPoint += 30; // Đuôi mail công ty chính chủ: +30 điểm
             }
             recruiter.setPoint(initialPoint);
             

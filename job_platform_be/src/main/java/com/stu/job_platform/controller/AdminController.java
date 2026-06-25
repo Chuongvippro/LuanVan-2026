@@ -2,6 +2,9 @@ package com.stu.job_platform.controller;
 
 import com.stu.job_platform.dto.ApiResponse;
 import com.stu.job_platform.dto.JobPostResponse;
+import com.stu.job_platform.dto.UpdateCandidateRequest;
+import com.stu.job_platform.dto.UpdateRecruiterRequest;
+import com.stu.job_platform.entity.BugReport;
 import com.stu.job_platform.entity.ErrorLog;
 import com.stu.job_platform.entity.User;
 import com.stu.job_platform.service.AdminService;
@@ -16,6 +19,14 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+
+
+
+
 
 @RestController
 @RequestMapping("/api/v1/admin")
@@ -55,6 +66,34 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("Xóa tài khoản thành công!"));
     }
 
+    @PutMapping("/users/{id}")
+    public ResponseEntity<ApiResponse<?>> updateUser(@PathVariable Integer id, @RequestBody Map<String, Object> body) {
+        //TODO: process PUT request
+        
+        String role = adminService.getRoleById(id);
+        if("candidate".equalsIgnoreCase(role)) {
+            UpdateCandidateRequest request = new UpdateCandidateRequest();
+            request.setName((String) body.get("name"));
+            request.setEmail((String) body.get("email"));
+            
+            adminService.updateCandidate(id, request);
+        }else if("recruiter".equalsIgnoreCase(role)) {
+            // Handle recruiter update logic here
+            // You can create a similar DTO for recruiter updates if needed
+            UpdateRecruiterRequest  request = new UpdateRecruiterRequest();
+            request.setName((String) body.get("name"));
+            request.setEmail((String) body.get("email"));
+            request.setCompanyName((String) body.get("companyName"));
+            request.setTaxCode((String) body.get("taxCode"));
+            request.setWebsiteUrl((String) body.get("websiteUrl"));
+            request.setVerifiedName((Boolean) body.get("verifiedName"));
+            request.setVerifiedTax((Boolean) body.get("verifiedTax"));
+            request.setVerifiedWebsite((Boolean) body.get("verifiedWebsite"));
+            adminService.updateRecruiter(id, request);
+        } 
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật thông tin người dùng thành công!"));
+    }
+
     // ===== JOBS =====
 
     @GetMapping("/jobs")
@@ -74,16 +113,16 @@ public class AdminController {
 
     // ===== ERROR LOGS =====
 
-    @GetMapping("/error-logs")
-    public ResponseEntity<ApiResponse<List<ErrorLog>>> getAllErrorLogs() {
-        return ResponseEntity.ok(ApiResponse.success(adminService.getAllErrorLogs()));
+    @GetMapping("/bugs")
+    public ResponseEntity<ApiResponse<List<BugReport>>> getAllBugs() {
+        return ResponseEntity.ok(ApiResponse.success(adminService.getAllBugReports()));
     }
 
-    @PutMapping("/error-logs/{id}/status")
-    public ResponseEntity<ApiResponse<?>> updateErrorLogStatus(
+   @PutMapping("/bugs/{id}/status")
+    public ResponseEntity<ApiResponse<?>> updateBugStatus(
             @PathVariable Integer id, @RequestBody Map<String, String> body) {
-        adminService.updateErrorLogStatus(id, body.get("status"));
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái lỗi hệ thống thành công!"));
+        adminService.updateBugStatus(id, body.get("status"));
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật thành công!"));
     }
 
     // ===== STATS =====
@@ -92,4 +131,55 @@ public class AdminController {
     public ResponseEntity<ApiResponse<?>> getStats() {
         return ResponseEntity.ok(ApiResponse.success(adminService.getStats()));
     }
+
+    // ===== INDUSTRIES & JOB CATEGORIES =====
+    @GetMapping("/industries")
+    public ResponseEntity<ApiResponse<?>>   getAllIndustry(){
+        return ResponseEntity.ok(ApiResponse.success(adminService.getAllIndustries()));
+    }
+
+    @PostMapping("/industries")
+    public ResponseEntity<ApiResponse<?>> addIndustry(@RequestBody Map<String, String> body) {
+        String name = body.get("name");
+        adminService.addIndustry(name);
+        return ResponseEntity.ok(ApiResponse.success("Thêm ngành nghề thành công!"));
+    }
+    @PutMapping("/industries/{id}")
+    public ResponseEntity<ApiResponse<?>> updateIndustry(@PathVariable Integer id, @RequestBody Map<String, Object> body) {
+        String name = (String) body.get("name");
+        Integer status = (Integer) body.get("status");
+        adminService.updateIndustry(id, name, status);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật ngành nghề thành công!"));
+    }
+    @DeleteMapping("/industries/{id}")
+    public ResponseEntity<ApiResponse<?>> deleteIndustry(@PathVariable Integer id) {
+        adminService.deleteIndustry(id);
+        return ResponseEntity.ok(ApiResponse.success("Xóa ngành nghề thành công!"));
+    }
+
+
+    @GetMapping("/categories")
+    public ResponseEntity<ApiResponse<?>> getAllJobCategories() {
+        return ResponseEntity.ok(ApiResponse.success(adminService.getAllJobCategories()));
+    }
+
+    @PostMapping("/categories")
+    public ResponseEntity<ApiResponse<?>> addJobCategory(@RequestBody Map<String, Object> body) {
+        String name = (String) body.get("name");
+        Integer industryId = (Integer) body.get("industryId");
+        adminService.addJobCategory(name, industryId);
+        return ResponseEntity.ok(ApiResponse.success("Thêm danh mục việc làm thành công!"));
+    }
+    @PutMapping("/categories/{id}")
+    public ResponseEntity<ApiResponse<?>> updateJobCategory(@PathVariable Integer id, @RequestBody Map<String, Object> body) {
+        String name = (String) body.get("name");
+        adminService.updateJobCategory(id, name);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật danh mục việc làm thành công!"));
+    }
+    @DeleteMapping("/categories/{id}")
+    public ResponseEntity<ApiResponse<?>> deleteJobCategory(@PathVariable Integer id) {
+        adminService.deleteJobCategory(id);
+        return ResponseEntity.ok(ApiResponse.success("Xóa danh mục việc làm thành công!"));
+    }
+    
 }

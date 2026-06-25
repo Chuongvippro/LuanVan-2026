@@ -37,6 +37,7 @@ public class ProfileService {
                 dto.setTaxCode(rec.getTaxCode());
                 dto.setWebsiteUrl(rec.getWebsiteUrl());
                 dto.setStatus(rec.getStatusTrust() != null ? rec.getStatusTrust() : "pending");
+                dto.setPoint(rec.getPoint() != null ? rec.getPoint() : 80);
             } else {
                 // Nếu chưa có bản ghi dưới DB con, trả về giá trị mặc định tránh sập FE
                 dto.setCompanyName("");
@@ -44,6 +45,7 @@ public class ProfileService {
                 dto.setTaxCode("");
                 dto.setWebsiteUrl("");
                 dto.setStatus("pending");
+                dto.setPoint(80);
             }
         }else {
             Candidate can = candidateRepository.findById(userId).orElse(new Candidate());
@@ -70,6 +72,8 @@ public class ProfileService {
             if (currentStatus == null || "pending".equals(currentStatus) || "verified".equals(currentStatus)) currentStatus = "";
             Set<String> verifiedFields = new HashSet<>(Arrays.asList(currentStatus.split(",")));
             verifiedFields.remove("");
+            verifiedFields.remove("pending"); 
+            verifiedFields.remove("verified");
 
             if (rec.getCompanyName() != null && !rec.getCompanyName().equals(dto.getCompanyName())) verifiedFields.remove("name");
             if (rec.getTaxCode() != null && !rec.getTaxCode().equals(dto.getTaxCode())) verifiedFields.remove("tax");
@@ -130,14 +134,24 @@ public class ProfileService {
 
         Set<String> verifiedFields = new HashSet<>(Arrays.asList((rec.getStatusTrust() == null ? "" : rec.getStatusTrust()).split(",")));
         verifiedFields.remove("");
+        verifiedFields.remove("pending"); 
+        verifiedFields.remove("verified");
 
         if (matchPercentage >= 90) {
             if ("companyName".equals(fieldType)) verifiedFields.add("name");
             else if ("taxCode".equals(fieldType)) verifiedFields.add("tax");
             else if ("websiteUrl".equals(fieldType)) verifiedFields.add("website");
 
-            rec.setStatusTrust(String.join(",", verifiedFields));
-            rec.setPoint(60 + (verifiedFields.contains("name") ? 10 : 0) + (verifiedFields.contains("tax") ? 20 : 0) + (verifiedFields.contains("website") ? 10 : 0));
+            if (verifiedFields.containsAll(Set.of("name", "tax", "website"))) {
+                rec.setStatusTrust("verified," + String.join(",", verifiedFields)); // "verified,name,tax,website"
+                rec.setPoint(100);
+            } else {
+                rec.setStatusTrust("pending," + String.join(",", verifiedFields)); // "pending,name" hoặc "pending,name,tax"
+                rec.setPoint(60 + (verifiedFields.contains("name") ? 10 : 0)
+                                + (verifiedFields.contains("tax") ? 20 : 0)
+                                + (verifiedFields.contains("website") ? 10 : 0));
+            }
+            
             recruiterRepository.save(rec);
             
             return Map.of("status", "SUCCESS", "newStatus", rec.getStatusTrust(), "newPoint", rec.getPoint());
@@ -145,9 +159,11 @@ public class ProfileService {
             if ("companyName".equals(fieldType)) verifiedFields.remove("name");
             else if ("taxCode".equals(fieldType)) verifiedFields.remove("tax");
             else if ("websiteUrl".equals(fieldType)) verifiedFields.remove("website");
-            
-            rec.setStatusTrust(String.join(",", verifiedFields));
-            rec.setPoint(60 + (verifiedFields.contains("name") ? 10 : 0) + (verifiedFields.contains("tax") ? 20 : 0) + (verifiedFields.contains("website") ? 10 : 0));
+
+            rec.setStatusTrust("pending," + String.join(",", verifiedFields)); // vẫn pending
+            rec.setPoint(60 + (verifiedFields.contains("name") ? 10 : 0)
+                            + (verifiedFields.contains("tax") ? 20 : 0)
+                            + (verifiedFields.contains("website") ? 10 : 0));
             recruiterRepository.save(rec);
             
             return Map.of("status", "FAILED", "reason", aiMap.getOrDefault("reason", "Thông tin không khớp!"));

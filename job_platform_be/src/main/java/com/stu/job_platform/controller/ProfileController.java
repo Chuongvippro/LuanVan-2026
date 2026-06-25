@@ -36,7 +36,7 @@ public class ProfileController {
         String fieldType = request.get("fieldType");
         String value = request.get("value");
 
-        // Gọi Service lấy thông tin check điều kiện, Controller không gọi trực tiếp Repo nữa
+        // Gọi Service lấy thông tin check điều kiện, Controller không gọi trực tiếp Repo 
         Recruiter rec = profileService.getRecruiterById(userId);
         if (rec == null) return ResponseEntity.badRequest().body("Hồ sơ không tồn tại!");
 

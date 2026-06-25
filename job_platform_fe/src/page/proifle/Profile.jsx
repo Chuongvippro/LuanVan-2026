@@ -40,6 +40,17 @@ function EditableField({ label, value, onSave }) {
   );
 }
 
+function ReadOnlyField({ label, value }) {
+  return (
+    <div className="profile-field-item readonly" style={{ flex: 1, marginBottom: 0 }}>
+      <span className="field-label">{label}:</span>
+      <div className={`field-value-display readonly-value ${value ? '' : 'field-empty'}`}>
+        {value || '(Chưa có dữ liệu)'}
+      </div>
+    </div>
+  );
+}
+
 function Profile() {
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -85,7 +96,7 @@ function Profile() {
       return;
     }
     setAiLoadingField(fieldType);
-    setNotify({ type: 'info', msg: '🤖 Đang xác thực với AI...' });
+    setNotify({ type: 'info', msg: 'Đang xác thực với AI...' });
 
     try {
       const token = localStorage.getItem('accessToken');
@@ -137,6 +148,10 @@ function Profile() {
   const canVerifyTax = !!profileData.companyName;
   const canVerifyWeb = !!profileData.companyName && !!profileData.taxCode;
 
+  // Cảnh báo điểm tin cậy thấp, chỉ hiển thị, không chặn thao tác
+  const currentPoint = profileData.point ?? 80;
+  const isLowTrust = currentPoint <= 80;
+
   return (
     <div className="profile-wrapper">
       <div className="profile-header">
@@ -146,25 +161,40 @@ function Profile() {
 
       {notify.msg && <div className={`notify-box nt-${notify.type}`}>{notify.msg}</div>}
 
-      <div className="verify-row-layout" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', marginBottom: '20px' }}>
-        <EditableField label="Tên công ty" value={profileData.companyName} onSave={(val) => handleUpdateField('companyName', val)} />
-        <button className="mini-verify-btn" onClick={() => handleVerifySingleField('companyName', profileData.companyName)} disabled={!!aiLoadingField}>
-          {aiLoadingField === 'companyName' ? '⏳...' : (isNameVerified ? '✅ Đã duyệt' : '✓ Duyệt Tên')}
-        </button>
-      </div>
+      {isLowTrust && (
+        <div className="trust-warning-banner">
+          ⚠️ Điểm tin cậy hiện tại: <strong>{currentPoint}đ</strong> — Vui lòng cung cấp đầy đủ và xác thực thông tin doanh nghiệp (Tên công ty, Mã số thuế, Website) để tránh ảnh hưởng đến việc đăng tin tuyển dụng.
+        </div>
+      )}
 
-      <div className="verify-row-layout" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', marginBottom: '20px' }}>
-        <EditableField label="Mã số thuế" value={profileData.taxCode} onSave={(val) => handleUpdateField('taxCode', val)} />
-        <button className="mini-verify-btn" onClick={() => handleVerifySingleField('taxCode', profileData.taxCode)} disabled={!canVerifyTax || !!aiLoadingField}>
-          {aiLoadingField === 'taxCode' ? '⏳...' : (isTaxVerified ? '✅ Đã duyệt' : '✓ Duyệt Thuế')}
-        </button>
-      </div>
+      <div className="profile-body" style={{ paddingTop: (notify.msg || isLowTrust) ? 0 : 25 }}>
+        <div className="account-info-grid">
+          <ReadOnlyField label="Tên tài khoản" value={profileData.name} />
+          <ReadOnlyField label="Email đăng ký" value={profileData.email} />
+          <ReadOnlyField label="Vai trò" value={profileData.role} />
+          <ReadOnlyField label="Email công ty" value={profileData.companyEmail} />
+        </div>
 
-      <div className="verify-row-layout" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', marginBottom: '20px' }}>
-        <EditableField label="Website" value={profileData.websiteUrl} onSave={(val) => handleUpdateField('websiteUrl', val)} />
-        <button className="mini-verify-btn" onClick={() => handleVerifySingleField('websiteUrl', profileData.websiteUrl)} disabled={!canVerifyWeb || !!aiLoadingField}>
-          {aiLoadingField === 'websiteUrl' ? '⏳...' : (isWebVerified ? '✅ Đã duyệt' : '✓ Duyệt Web')}
-        </button>
+        <div className="verify-row-layout" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', marginBottom: '20px' }}>
+          <EditableField label="Tên công ty" value={profileData.companyName} onSave={(val) => handleUpdateField('companyName', val)} />
+          <button className="mini-verify-btn" onClick={() => handleVerifySingleField('companyName', profileData.companyName)} disabled={!!aiLoadingField}>
+            {aiLoadingField === 'companyName' ? '⏳...' : (isNameVerified ? '✅ Đã duyệt' : '✓ Duyệt Tên')}
+          </button>
+        </div>
+
+        <div className="verify-row-layout" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', marginBottom: '20px' }}>
+          <EditableField label="Mã số thuế" value={profileData.taxCode} onSave={(val) => handleUpdateField('taxCode', val)} />
+          <button className="mini-verify-btn" onClick={() => handleVerifySingleField('taxCode', profileData.taxCode)} disabled={!canVerifyTax || !!aiLoadingField}>
+            {aiLoadingField === 'taxCode' ? '⏳...' : (isTaxVerified ? '✅ Đã duyệt' : '✓ Duyệt Thuế')}
+          </button>
+        </div>
+
+        <div className="verify-row-layout" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', marginBottom: 0 }}>
+          <EditableField label="Website" value={profileData.websiteUrl} onSave={(val) => handleUpdateField('websiteUrl', val)} />
+          <button className="mini-verify-btn" onClick={() => handleVerifySingleField('websiteUrl', profileData.websiteUrl)} disabled={!canVerifyWeb || !!aiLoadingField}>
+            {aiLoadingField === 'websiteUrl' ? '⏳...' : (isWebVerified ? '✅ Đã duyệt' : '✓ Duyệt Web')}
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -49,8 +49,8 @@ public class AiVerificationService {
             return doc.select("h1, h2, footer, p").text();
         } catch (Exception e) {
             try{
-                String sql = "Insert into error_logs (user_id, error_name, notes, status) values (?, ?, ?, ?)";
-                jdbcTemplate.update(sql, userId, "WEB_BLOCKED_BY_WALL", "Website chặn bot cào dữ liệu tại URL: " + url+ ". Chi tiết" + e.getMessage(), "pending");
+                String sql = "Insert into bug_reports (user_id, title, description, status) values (?, ?, ?, ?)";
+                jdbcTemplate.update(sql, userId, "WEB_BLOCKED_BY_WALL", "Website chặn bot cào dữ liệu tại URL: " + url + ". Chi tiết: " + e.getMessage(), "pending");
             } catch (Exception ex) {
                 System.err.println("Không thể lưu log lỗi vào db: " + ex.getMessage());
             }

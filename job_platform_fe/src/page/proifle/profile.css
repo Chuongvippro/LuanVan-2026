@@ -1,150 +1,216 @@
 .profile-wrapper {
-  max-width: 650px;
+  max-width: 700px;
   margin: 40px auto;
-  padding: 25px;
-  background-color: #16161a;
-  color: #fffffe;
-  border-radius: 12px;
+  padding: 0;
+  background-color: #fff;
+  color: #121212;
+  border-radius: 8px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  border: 1px solid #e5e5e5;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  overflow: hidden;
 }
 
 .profile-header {
   text-align: center;
-  border-bottom: 2px solid #7f5af0;
-  padding-bottom: 15px;
-  margin-bottom: 25px;
+  background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+  border-bottom: 1px solid #e5e5e5;
+  padding: 30px 25px 20px;
+  margin-bottom: 0;
 }
 
-.profile-header h2 { 
-  margin: 0; 
-  font-size: 24px; 
-  color: #7f5af0; 
+.profile-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #121212;
+  letter-spacing: 0.3px;
 }
 
 .status-badge {
   display: inline-block;
-  margin-top: 8px;
-  padding: 4px 10px;
+  margin-top: 12px;
+  padding: 5px 14px;
   font-size: 12px;
   border-radius: 20px;
-  font-weight: bold;
+  font-weight: 600;
 }
 
-.status-default { background: #242629; color: #94a1b2; }
-.status-approved { background: #2cb67d; color: #fffffe; }
-.status-pending { background: #ff9800; color: #fffffe; }
-.status-rejected { background: #e53935; color: #fffffe; }
+.status-default { background: #f2f2f2; color: #4a4a4a; }
+.status-approved { background: #e6f7ef; color: #00b14f; border: 1px solid #00b14f; }
+.status-pending { background: #fff4e5; color: #ff9100; border: 1px solid #ff9100; }
+.status-rejected { background: #fde8e8; color: #e53935; border: 1px solid #e53935; }
 
 .profile-section-title {
-  color: #7f5af0;
-  font-size: 18px;
-  margin: 25px 0 15px 0;
-  border-left: 4px solid #7f5af0;
-  padding-left: 10px;
+  color: #121212;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  padding: 0 25px;
+}
+
+/* Banner cảnh báo điểm tin cậy thấp */
+.trust-warning-banner {
+  margin: 0 25px 20px;
+  padding: 14px 16px;
+  background: #fdeaec;
+  border: 1px solid #ed1b2f;
+  border-left: 4px solid #ed1b2f;
+  border-radius: 6px;
+  color: #c8152a;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.profile-body {
+  padding: 25px;
+}
+
+/* Grid thông tin tài khoản chỉ đọc */
+.account-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px dashed #e5e5e5;
+}
+
+@media (max-width: 560px) {
+  .account-info-grid { grid-template-columns: 1fr; }
 }
 
 .profile-field-item {
   margin-bottom: 18px;
-  padding: 12px;
-  background: #242629;
+  padding: 14px 16px;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
   border-radius: 6px;
   transition: 0.2s;
 }
 
-.profile-field-item:hover { 
-  background: #2c2f33; 
+.profile-field-item:hover {
+  border-color: #ed1b2f;
+  background: #fff;
+}
+
+.profile-field-item.readonly {
+  background: #f5f5f5;
+}
+
+.profile-field-item.readonly:hover {
+  border-color: #e5e5e5;
+  background: #f5f5f5;
 }
 
 .field-label {
   display: block;
-  font-size: 13px;
-  color: #94a1b2;
-  margin-bottom: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #767676;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 6px;
 }
 
 .field-value-display {
-  font-size: 16px;
-  min-height: 24px;
+  font-size: 15px;
+  min-height: 22px;
+  color: #121212;
   cursor: pointer;
 }
 
-.field-empty { 
-  color: #ff9800; 
-  font-style: italic; 
+.readonly-value {
+  cursor: default;
+  color: #4a4a4a;
+}
+
+.field-empty {
+  color: #ff9100;
+  font-style: italic;
+  font-weight: 400;
 }
 
 .field-input {
   width: 100%;
-  padding: 6px;
-  font-size: 16px;
-  background: #16161a;
-  color: #fffffe;
-  border: 1px solid #7f5af0;
+  padding: 8px 10px;
+  font-size: 15px;
+  background: #fff;
+  color: #121212;
+  border: 1px solid #ed1b2f;
   border-radius: 4px;
   outline: none;
 }
 
 .notify-box {
-  padding: 12px;
+  padding: 12px 16px;
   border-radius: 6px;
-  margin-bottom: 20px;
+  margin: 0 25px 20px;
   text-align: center;
   font-size: 14px;
+  font-weight: 500;
 }
 
-.nt-success { background: #2cb67d; color: #fff; }
-.nt-error { background: #e53935; color: #fff; }
-.nt-info { background: #7f5af0; color: #fff; }
-.nt-warning { background: #ff9800; color: #fff; }
+.nt-success { background: #e6f7ef; color: #00b14f; border: 1px solid #00b14f; }
+.nt-error { background: #fde8e8; color: #e53935; border: 1px solid #e53935; }
+.nt-info { background: #fdeaec; color: #ed1b2f; border: 1px solid #ed1b2f; }
+.nt-warning { background: #fff4e5; color: #ff9100; border: 1px solid #ff9100; }
 
 .ai-btn {
   width: 100%;
   padding: 12px;
-  background: #7f5af0;
-  color: #fffffe;
+  background: #ed1b2f;
+  color: #fff;
   border: none;
   border-radius: 6px;
   font-size: 16px;
-  font-weight: bold;
+  font-weight: 600;
   cursor: pointer;
   margin-top: 15px;
   transition: 0.2s;
 }
 
-.ai-btn:hover { 
-  background: #6b46e5; 
+.ai-btn:hover {
+  background: #c8152a;
 }
 
-.ai-btn:disabled { 
-  background: #444; 
-  cursor: not-allowed; 
+.ai-btn:disabled {
+  background: #d6d6d6;
+  cursor: not-allowed;
 }
 
-.profile-loading { 
-  text-align: center; 
-  color: #fff; 
-  margin-top: 100px; 
-  font-size: 18px; 
+.profile-loading {
+  text-align: center;
+  color: #121212;
+  margin-top: 100px;
+  font-size: 16px;
+}
+
+.verify-row-layout {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-bottom: 18px;
 }
 
 .mini-verify-btn {
-  background-color: #6a1b9a;
-  color: white;
+  background-color: #ed1b2f;
+  color: #fff;
   border: none;
-  padding: 10px 14px;
+  padding: 0 16px;
   font-size: 14px;
-  font-weight: bold;
+  font-weight: 600;
   border-radius: 6px;
   cursor: pointer;
-  height: 42px;
+  height: 53px;
+  white-space: nowrap;
   transition: all 0.2s ease-in-out;
 }
 .mini-verify-btn:hover {
-  background-color: #4a148c;
-  transform: scale(1.03);
+  background-color: #c8152a;
 }
 .mini-verify-btn:disabled {
-  background-color: #cccccc;
+  background-color: #e5e5e5;
+  color: #a6a6a6;
   cursor: not-allowed;
 }

@@ -17,6 +17,7 @@ public class ProfileRequest {
     private String companyEmail;
     private String taxCode;
     private String websiteUrl;
+    private Integer point;
 
     // --- GETTER & SETTER THUỒN (CHỐNG LỖI LOMBOK) ---
     public String getEmail() { return email; }
@@ -41,4 +42,6 @@ public class ProfileRequest {
     public void setTaxCode(String taxCode) { this.taxCode = taxCode; }
     public String getWebsiteUrl() { return websiteUrl; }
     public void setWebsiteUrl(String websiteUrl) { this.websiteUrl = websiteUrl; }
+    public Integer getPoint() { return point; }
+    public void setPoint(Integer point) { this.point = point; }
 }
