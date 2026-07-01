@@ -322,7 +322,7 @@ function AdminDashboard() {
       await api.post(baseEndpoints[type], form);
     } else {
       await api.put(baseEndpoints[type], form);
-    }
+    }   
       setEditingItem(null);
       // refetch theo type
       if (type === 'candidate') fetchCandidates();

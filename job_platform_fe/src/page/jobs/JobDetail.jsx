@@ -144,6 +144,24 @@ function JobDetail() {
               </span>
             </span>
           </div>
+          <div className="sidebar-stat">
+            <span className="sidebar-stat-label">Mã công việc</span>
+            <span className="sidebar-stat-value" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <code style={{ background: '#f4f5f7', padding: '2px 8px', borderRadius: '4px', fontSize: '13px' }}>
+                {job.jobCode}
+              </code>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(job.jobCode);
+                  setMessage('✅ Đã copy mã công việc!');
+                  setTimeout(() => setMessage(''), 2000);
+                }}
+                style={{ background: 'none', border: '1px solid #dfe1e6', borderRadius: '4px', cursor: 'pointer', padding: '2px 8px', fontSize: '12px', color: '#5e6c84' }}
+              >
+                📋 Copy
+              </button>
+            </span>
+          </div>
         </div>
 
         <div style={{ marginTop: '40px' }}>

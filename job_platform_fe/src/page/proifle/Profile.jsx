@@ -101,14 +101,14 @@ function Profile() {
     try {
       const token = localStorage.getItem('accessToken');
       const user = decodeToken(token);
-      
+
       // Đồng bộ trước khi quét
       const updatedData = { ...profileData, [fieldType]: value };
       await api.put(`/profile/${user.id}/${profileData.role}`, updatedData);
 
-      const response = await api.post(`/profile/verify-field/${user.id}`, { 
-        fieldType: fieldType, 
-        value: value 
+      const response = await api.post(`/profile/verify-field/${user.id}`, {
+        fieldType: fieldType,
+        value: value
       });
 
       if (response.data && response.data.status === "SUCCESS") {
@@ -139,6 +139,8 @@ function Profile() {
   if (loading) return <div className="profile-loading">Đang tải...</div>;
   if (!profileData) return null;
 
+  const isRecruiter = profileData.role === 'recruiter';
+
   const badge = renderStatusBadge(profileData.status);
   const isNameVerified = profileData.status?.includes('name');
   const isTaxVerified = profileData.status?.includes('tax');
@@ -150,13 +152,15 @@ function Profile() {
 
   // Cảnh báo điểm tin cậy thấp, chỉ hiển thị, không chặn thao tác
   const currentPoint = profileData.point ?? 80;
-  const isLowTrust = currentPoint <= 80;
+  const isLowTrust = isRecruiter && currentPoint <= 80;
 
   return (
     <div className="profile-wrapper">
       <div className="profile-header">
-        <h2>HỒ SƠ NHÀ TUYỂN DỤNG</h2>
-        <span className={`status-badge ${badge.class}`}>Trạng thái: {badge.text}</span>
+        <h2>{isRecruiter ? 'HỒ SƠ NHÀ TUYỂN DỤNG' : 'HỒ SƠ ỨNG VIÊN'}</h2>
+        {isRecruiter && (
+          <span className={`status-badge ${badge.class}`}>Trạng thái: {badge.text}</span>
+        )}
       </div>
 
       {notify.msg && <div className={`notify-box nt-${notify.type}`}>{notify.msg}</div>}
@@ -172,29 +176,43 @@ function Profile() {
           <ReadOnlyField label="Tên tài khoản" value={profileData.name} />
           <ReadOnlyField label="Email đăng ký" value={profileData.email} />
           <ReadOnlyField label="Vai trò" value={profileData.role} />
-          <ReadOnlyField label="Email công ty" value={profileData.companyEmail} />
+          {isRecruiter && <ReadOnlyField label="Email công ty" value={profileData.companyEmail} />}
         </div>
 
-        <div className="verify-row-layout" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', marginBottom: '20px' }}>
-          <EditableField label="Tên công ty" value={profileData.companyName} onSave={(val) => handleUpdateField('companyName', val)} />
-          <button className="mini-verify-btn" onClick={() => handleVerifySingleField('companyName', profileData.companyName)} disabled={!!aiLoadingField}>
-            {aiLoadingField === 'companyName' ? '⏳...' : (isNameVerified ? '✅ Đã duyệt' : '✓ Duyệt Tên')}
-          </button>
-        </div>
+        {isRecruiter ? (
+          <>
+            <div className="verify-row-layout" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', marginBottom: '20px' }}>
+              <EditableField label="Tên công ty" value={profileData.companyName} onSave={(val) => handleUpdateField('companyName', val)} />
+              <button className="mini-verify-btn" onClick={() => handleVerifySingleField('companyName', profileData.companyName)} disabled={!!aiLoadingField}>
+                {aiLoadingField === 'companyName' ? '⏳...' : (isNameVerified ? '✅ Đã duyệt' : '✓ Duyệt Tên')}
+              </button>
+            </div>
 
-        <div className="verify-row-layout" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', marginBottom: '20px' }}>
-          <EditableField label="Mã số thuế" value={profileData.taxCode} onSave={(val) => handleUpdateField('taxCode', val)} />
-          <button className="mini-verify-btn" onClick={() => handleVerifySingleField('taxCode', profileData.taxCode)} disabled={!canVerifyTax || !!aiLoadingField}>
-            {aiLoadingField === 'taxCode' ? '⏳...' : (isTaxVerified ? '✅ Đã duyệt' : '✓ Duyệt Thuế')}
-          </button>
-        </div>
+            <div className="verify-row-layout" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', marginBottom: '20px' }}>
+              <EditableField label="Mã số thuế" value={profileData.taxCode} onSave={(val) => handleUpdateField('taxCode', val)} />
+              <button className="mini-verify-btn" onClick={() => handleVerifySingleField('taxCode', profileData.taxCode)} disabled={!canVerifyTax || !!aiLoadingField}>
+                {aiLoadingField === 'taxCode' ? '⏳...' : (isTaxVerified ? '✅ Đã duyệt' : '✓ Duyệt Thuế')}
+              </button>
+            </div>
 
-        <div className="verify-row-layout" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', marginBottom: 0 }}>
-          <EditableField label="Website" value={profileData.websiteUrl} onSave={(val) => handleUpdateField('websiteUrl', val)} />
-          <button className="mini-verify-btn" onClick={() => handleVerifySingleField('websiteUrl', profileData.websiteUrl)} disabled={!canVerifyWeb || !!aiLoadingField}>
-            {aiLoadingField === 'websiteUrl' ? '⏳...' : (isWebVerified ? '✅ Đã duyệt' : '✓ Duyệt Web')}
-          </button>
-        </div>
+            <div className="verify-row-layout" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', marginBottom: 0 }}>
+              <EditableField label="Website" value={profileData.websiteUrl} onSave={(val) => handleUpdateField('websiteUrl', val)} />
+              <button className="mini-verify-btn" onClick={() => handleVerifySingleField('websiteUrl', profileData.websiteUrl)} disabled={!canVerifyWeb || !!aiLoadingField}>
+                {aiLoadingField === 'websiteUrl' ? '⏳...' : (isWebVerified ? '✅ Đã duyệt' : '✓ Duyệt Web')}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="verify-row-layout" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', marginBottom: '20px' }}>
+              <EditableField label="Số điện thoại" value={profileData.phone} onSave={(val) => handleUpdateField('phone', val)} />
+            </div>
+
+            <div className="verify-row-layout" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', marginBottom: 0 }}>
+              <EditableField label="Địa chỉ" value={profileData.address} onSave={(val) => handleUpdateField('address', val)} />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
