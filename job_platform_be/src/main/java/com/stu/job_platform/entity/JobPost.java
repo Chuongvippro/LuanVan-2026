@@ -41,6 +41,9 @@ public class JobPost {
     @Column(name = "updated_at", insertable = false, updatable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "job_code", unique = true, nullable = false, length = 10)
+    private String jobCode;
+
     @ManyToOne
     @JoinColumn(name = "recruiter_id")
     private Recruiter recruiter;

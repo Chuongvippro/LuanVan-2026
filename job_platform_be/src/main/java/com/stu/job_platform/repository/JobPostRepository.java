@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface JobPostRepository extends JpaRepository<JobPost, Integer> {
@@ -40,4 +41,10 @@ public interface JobPostRepository extends JpaRepository<JobPost, Integer> {
 
     // Lấy bài đăng nổi bật (mới nhất, active)
     List<JobPost> findTop10ByStatusOrderByCreatedAtDesc(Integer status);
+
+    boolean existsByJobCode(String jobCode);
+
+    Optional<JobPost> findByJobCode(String jobCode);
+
+    List<JobPost> findByStatus(Integer status);
 }

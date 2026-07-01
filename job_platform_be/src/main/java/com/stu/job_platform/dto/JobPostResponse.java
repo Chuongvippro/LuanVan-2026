@@ -17,6 +17,8 @@ public class JobPostResponse {
     private String benefits;
     private Integer status;
     private LocalDateTime createdAt;
+    private String jobCode;
+
 
     // Thông tin nhà tuyển dụng (gom gọn)
     private Integer recruiterId;
@@ -68,4 +70,6 @@ public class JobPostResponse {
     public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
     public long getApplicationCount() { return applicationCount; }
     public void setApplicationCount(long applicationCount) { this.applicationCount = applicationCount; }
+    public String getJobCode() { return jobCode; }
+    public void setJobCode(String jobCode) { this.jobCode = jobCode; }
 }

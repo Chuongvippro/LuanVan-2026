@@ -10,4 +10,7 @@ import java.util.List;
 public interface AiConversationRepository extends JpaRepository<AiConversation, Integer> {
     List<AiConversation> findByUserIdOrderByCreatedAtAsc(Integer userId);
     void deleteByUserId(Integer userId);
+
+    List<AiConversation> findByUserIdAndSessionIdOrderByCreatedAtAsc(Integer userId, String sessionId);
+
 }

@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,6 +29,34 @@ public class JobPostService {
     private JobCategoryRepository jobCategoryRepository;
     @Autowired
     private ApplicationRepository applicationRepository;
+
+    private static final String CHARACTERS =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+    private String generateJobCode() {
+
+        Random random = new Random();
+
+        String code;
+
+        do {
+
+            StringBuilder builder = new StringBuilder("JP-");
+
+            for (int i = 0; i < 6; i++) {
+                builder.append(
+                        CHARACTERS.charAt(
+                                random.nextInt(CHARACTERS.length())
+                        )
+                );
+            }
+
+            code = builder.toString();
+
+        } while (jobPostRepository.existsByJobCode(code));
+
+        return code;
+    }
 
     /**
      * Tạo bài đăng mới (Recruiter)
@@ -46,6 +75,7 @@ public class JobPostService {
         jobPost.setRequirements(request.getRequirements());
         jobPost.setBenefits(request.getBenefits());
         jobPost.setStatus(1); // Active mặc định
+        jobPost.setJobCode(generateJobCode());
         jobPost.setRecruiter(recruiter);
 
         if (request.getCategoryId() != null) {
@@ -175,6 +205,7 @@ public class JobPostService {
         dto.setBenefits(jobPost.getBenefits());
         dto.setStatus(jobPost.getStatus());
         dto.setCreatedAt(jobPost.getCreatedAt());
+        dto.setJobCode(jobPost.getJobCode());
 
         // Gom thông tin recruiter
         if (jobPost.getRecruiter() != null) {

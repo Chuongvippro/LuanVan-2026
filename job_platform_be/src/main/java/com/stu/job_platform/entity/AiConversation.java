@@ -24,6 +24,9 @@ public class AiConversation {
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "session_id")
+    private String sessionId;
+
     @ManyToOne
     @JoinColumn(name = "user_id") 
     private User user;
