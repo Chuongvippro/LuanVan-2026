@@ -15,10 +15,12 @@ function AiChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeView, setActiveView] = useState(null);
   const [profileCvUrl, setProfileCvUrl] = useState(null);
+  const [cvResult, setCvResult] = useState(null);
   const navigate = useNavigate();
 
   const token = localStorage.getItem('accessToken');
   const user  = token ? decodeToken(token) : null;
+  const isCandidate = user?.role === 'candidate' || user?.role === 'ROLE_CANDIDATE';
 
   useEffect(() => {
     const loadProfileCv = async () => {
@@ -31,11 +33,13 @@ function AiChatWidget() {
         console.error('Error loading profile CV:', err);
       }
     };
-    if (isOpen && user && !profileCvUrl) loadProfileCv();
+    // Chỉ load CV profile nếu user là candidate
+    if (isOpen && user && isCandidate && !profileCvUrl) loadProfileCv();
   }, [isOpen, user]);
 
-  const handleActionSelect = (action) => setActiveView(action.id);
-  const handleBackToMenu   = ()       => setActiveView(null);
+  const handleActionSelect = (action) => { setActiveView(action.id); setCvResult(null); };
+  const handleBackToMenu   = ()       => { setActiveView(null); setCvResult(null); };
+  const handleCvResult     = (result) => setCvResult(result);
 
   const showMenu           = !activeView;
   const showEvaluatePanel  = activeView === 'evaluate_cv';
@@ -53,11 +57,38 @@ function AiChatWidget() {
           <h3>🤖 Trợ lý AI</h3>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             {user && !showMenu && (
-              <button className="btn btn-ghost btn-sm" onClick={handleBackToMenu} style={{ color: 'white' }}>
+              <button
+                onClick={handleBackToMenu}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '4px',
+                  padding: '5px 12px', borderRadius: '20px',
+                  border: '1.5px solid rgba(255,255,255,0.8)',
+                  background: 'transparent',
+                  color: 'white', fontSize: '13px', fontWeight: '600',
+                  cursor: 'pointer', transition: 'background 0.2s',
+                  letterSpacing: '0.01em',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
                 ← Menu
               </button>
             )}
-            <button className="btn btn-ghost btn-sm" onClick={() => setIsOpen(false)} style={{ color: 'white' }}>
+            <button
+              onClick={() => setIsOpen(false)}
+              title="Đóng"
+              style={{
+                width: '30px', height: '30px', borderRadius: '50%',
+                border: 'none',
+                background: 'rgba(255,255,255,0.25)',
+                color: 'white', fontSize: '15px', fontWeight: '700',
+                cursor: 'pointer', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', transition: 'background 0.2s',
+                lineHeight: 1,
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.45)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.25)'}
+            >
               ✕
             </button>
           </div>
@@ -118,7 +149,22 @@ function AiChatWidget() {
 
         {showEvaluatePanel && (
           <div className="ai-chat-messages" style={{ overflowY: 'auto' }}>
-            <CvEvaluationPanel onBack={handleBackToMenu} hasProfileCv={!!profileCvUrl} profileCvUrl={profileCvUrl} />
+            <CvEvaluationPanel
+              onBack={handleBackToMenu}
+              hasProfileCv={!!profileCvUrl}
+              profileCvUrl={profileCvUrl}
+              onResult={handleCvResult}
+            />
+            {cvResult && (
+              <div style={{
+                margin: '0 16px 16px', padding: '14px 16px',
+                background: '#e6f7ef', border: '1px solid #00b14f',
+                borderLeft: '4px solid #00b14f', borderRadius: 8,
+                fontSize: 13, color: '#005c28', lineHeight: 1.7,
+              }}>
+                {cvResult}
+              </div>
+            )}
           </div>
         )}
 

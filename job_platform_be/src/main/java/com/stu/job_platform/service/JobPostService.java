@@ -141,6 +141,15 @@ public class JobPostService {
     }
 
     /**
+     * Lấy chi tiết bài đăng theo job_code (dùng cho AI panel)
+     */
+    public JobPostResponse getJobPostByCode(String jobCode) {
+        JobPost jobPost = jobPostRepository.findByJobCode(jobCode)
+                .orElseThrow(() -> new RuntimeException("Mã bài đăng không tồn tại!"));
+        return toResponse(jobPost);
+    }
+
+    /**
      * Lấy danh sách bài đăng active (cho trang chủ)
      */
     public Page<JobPostResponse> getActiveJobs(Pageable pageable) {

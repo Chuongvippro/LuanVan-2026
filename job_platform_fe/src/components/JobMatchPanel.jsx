@@ -1,28 +1,22 @@
 import { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../service/api';
 
 function JobMatchPanel({ onBack }) {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const [result, setResult] = useState(null); // null | [] | [codes...]
+  const [jobs, setJobs] = useState(null); // null | [] | [JobPostResponse...]
   const fileInputRef = useRef(null);
-  const [copiedCode, setCopiedCode] = useState(null);
-
+  const navigate = useNavigate();
 
   const handleFile = (file) => {
     if (!file) return;
     const allowed = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    if (!allowed.includes(file.type)) {
-      alert('Chỉ hỗ trợ file PDF hoặc DOCX!');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File tối đa 5MB!');
-      return;
-    }
+    if (!allowed.includes(file.type)) { alert('Chỉ hỗ trợ file PDF hoặc DOCX!'); return; }
+    if (file.size > 5 * 1024 * 1024) { alert('File tối đa 5MB!'); return; }
     setUploadedFile(file);
-    setResult(null);
+    setJobs(null);
   };
 
   const handleDrop = (e) => {
@@ -32,44 +26,49 @@ function JobMatchPanel({ onBack }) {
   };
 
   const handleSearch = async () => {
-    if (!uploadedFile) {
-      alert('Vui lòng upload CV của bạn!');
-      return;
-    }
+    if (!uploadedFile) { alert('Vui lòng upload CV của bạn!'); return; }
     setLoading(true);
-    setResult(null);
+    setJobs(null);
 
     try {
+      // Bước 1: AI trả về danh sách mã bài đăng
       const formData = new FormData();
       formData.append('cv', uploadedFile);
       const res = await api.post('/ai/find-matching-jobs', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      if (res.data.success) {
-        const codes = JSON.parse(res.data.data);
-        setResult(codes);
-      } else {
-        setResult([]);
-      }
+      if (!res.data.success) { setJobs([]); return; }
+
+      const codes = JSON.parse(res.data.data);
+      if (!codes || codes.length === 0) { setJobs([]); return; }
+
+      // Bước 2: Fetch chi tiết từng bài đăng theo job_code
+      const jobDetails = await Promise.all(
+        codes.map(async (code) => {
+          try {
+            const r = await api.get(`/jobs/by-code/${code}`);
+            return r.data.success ? r.data.data : { jobCode: code, title: code, _codeOnly: true };
+          } catch {
+            // Fallback: hiển thị mã nếu chưa có endpoint by-code (cần restart backend)
+            return { jobCode: code, title: code, _codeOnly: true };
+          }
+        })
+      );
+
+      setJobs(jobDetails.filter(Boolean));
+
     } catch (err) {
-        console.error(err);
-        setResult([]);
+      console.error(err);
+      setJobs([]);
     } finally {
       setLoading(false);
     }
   };
 
-
-  const handleCopy = async (code) => {
-    try {
-        await navigator.clipboard.writeText(code);
-        setCopiedCode(code);
-        setTimeout(() => setCopiedCode(null), 1500);
-    } catch (err) {
-        console.error('Copy thất bại:', err);
-    }
-};
+  const handleJobClick = (job) => {
+    navigate(`/jobs/${job.id}`);
+  };
 
   return (
     <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -95,17 +94,11 @@ function JobMatchPanel({ onBack }) {
           onDrop={handleDrop}
           style={{
             ...dropzone,
-            borderColor: dragOver ? 'var(--primary-color, #6366f1)' : uploadedFile ? '#22c55e' : '#d1d5db',
-            background: dragOver ? '#f5f3ff' : uploadedFile ? '#f0fdf4' : '#fafafa',
+            borderColor: dragOver ? '#ed1b2f' : uploadedFile ? '#22c55e' : '#d1d5db',
+            background: dragOver ? '#fff5f5' : uploadedFile ? '#f0fdf4' : '#fafafa',
           }}
         >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.docx"
-            style={{ display: 'none' }}
-            onChange={(e) => handleFile(e.target.files[0])}
-          />
+          <input ref={fileInputRef} type="file" accept=".pdf,.docx" style={{ display: 'none' }} onChange={(e) => handleFile(e.target.files[0])} />
           {uploadedFile ? (
             <>
               <span style={{ fontSize: '28px' }}>✅</span>
@@ -113,7 +106,7 @@ function JobMatchPanel({ onBack }) {
                 <div style={{ fontSize: '13px', fontWeight: '600', color: '#16a34a' }}>{uploadedFile.name}</div>
                 <div style={{ fontSize: '11px', color: '#888' }}>{(uploadedFile.size / 1024).toFixed(0)} KB</div>
               </div>
-              <button onClick={(e) => { e.stopPropagation(); setUploadedFile(null); setResult(null); }}
+              <button onClick={(e) => { e.stopPropagation(); setUploadedFile(null); setJobs(null); }}
                 style={{ fontSize: '11px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>
                 Xóa và chọn lại
               </button>
@@ -133,60 +126,141 @@ function JobMatchPanel({ onBack }) {
       {/* Nút tìm */}
       <button
         onClick={handleSearch}
-        disabled={loading}
+        disabled={loading || !uploadedFile}
         style={{
-          padding: '13px', background: loading ? '#a5b4fc' : 'var(--primary-color, #6366f1)',
+          padding: '13px', background: (loading || !uploadedFile) ? '#fca5a5' : '#ed1b2f',
           color: 'white', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '700',
-          cursor: loading ? 'not-allowed' : 'pointer',
+          cursor: (loading || !uploadedFile) ? 'not-allowed' : 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+          transition: 'background 0.2s',
         }}
       >
         {loading ? (
           <>
-            <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⏳</span>
-            Đang tìm kiếm...
+            <span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'mi-spin 0.7s linear infinite', display: 'inline-block' }} />
+            Đang phân tích CV...
           </>
-        ) : (
-          '🔍 Tìm việc phù hợp'
-        )}
+        ) : '🔍 Tìm việc phù hợp'}
       </button>
 
       {/* Kết quả */}
-      {result !== null && (
-        result.length > 0 ? (
+      {jobs !== null && (
+        jobs.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div style={{ fontSize: '13px', fontWeight: '700', color: '#444' }}>
-              Tìm thấy {result.length} bài đăng phù hợp:
+              ✨ Tìm thấy <span style={{ color: '#ed1b2f' }}>{jobs.length}</span> bài đăng phù hợp với bạn:
             </div>
-            {result.map((code) => (
-                <div key={code} style={{
+            {jobs.map((job) => (
+              job._codeOnly ? (
+                // Fallback: chưa có chi tiết (cần restart backend)
+                <div
+                  key={job.jobCode}
+                  style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '12px 14px', background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '10px',
-                }}>
-                    <code style={{ fontWeight: '700', fontSize: '14px' }}>{code}</code>
-                    <button
-                    onClick={() => handleCopy(code)}
-                    style={{
-                        fontSize: '12px', padding: '6px 12px',
-                        background: copiedCode === code ? '#22c55e' : 'var(--primary-color, #6366f1)',
-                        color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer',
-                        transition: 'background 0.2s',
-                    }}
-                    >
-                    {copiedCode === code ? '✓ Đã copy' : '📋 Copy mã'}
-                    </button>
+                    padding: '14px', background: '#f0fdf4',
+                    border: '1.5px solid #86efac', borderRadius: '12px',
+                  }}
+                >
+                  <div>
+                    <code style={{ fontWeight: '700', fontSize: '15px', letterSpacing: 1 }}>{job.jobCode}</code>
+                    <div style={{ fontSize: '11px', color: '#888', marginTop: 2 }}>Restart backend để xem chi tiết</div>
+                  </div>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(job.jobCode)}
+                    style={{ fontSize: '12px', padding: '6px 12px', background: '#ed1b2f', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                  >
+                    📋 Copy mã
+                  </button>
                 </div>
-                ))}
+              ) : (
+
+              <div
+                key={job.id}
+                onClick={() => handleJobClick(job)}
+                style={{
+                  display: 'flex', flexDirection: 'column', gap: '8px',
+                  padding: '14px', background: '#fff',
+                  border: '1.5px solid #e5e5e5', borderRadius: '12px',
+                  cursor: 'pointer', transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.15s',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = '#ed1b2f';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(237,27,47,0.12)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = '#e5e5e5';
+                  e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                {/* Company row */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {job.companyLogo ? (
+                    <img
+                      src={job.companyLogo}
+                      alt={job.companyName}
+                      style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'contain', border: '1px solid #f0f0f0', background: '#fff' }}
+                      onError={e => { e.target.style.display = 'none'; }}
+                    />
+                  ) : (
+                    <div style={{ width: 36, height: 36, borderRadius: 8, background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
+                      🏢
+                    </div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '12px', color: '#888', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {job.companyName}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#bbb', fontFamily: 'monospace' }}>{job.jobCode}</div>
+                  </div>
+                  <span style={{ fontSize: '14px', color: '#ccc' }}>→</span>
+                </div>
+
+                {/* Job title */}
+                <div style={{ fontSize: '14px', fontWeight: '700', color: '#121212', lineHeight: 1.3 }}>
+                  {job.title}
+                </div>
+
+                {/* Tags */}
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {job.salary && (
+                    <span style={tagStyle('#fef3c7', '#92400e')}>💰 {job.salary}</span>
+                  )}
+                  {job.location && (
+                    <span style={tagStyle('#eff6ff', '#1d4ed8')}>📍 {job.location}</span>
+                  )}
+                  {job.jobType && (
+                    <span style={tagStyle('#f0fdf4', '#15803d')}>⏱ {job.jobType}</span>
+                  )}
+                </div>
+
+                {/* CTA hint */}
+                <div style={{ fontSize: '11px', color: '#ed1b2f', fontWeight: 600 }}>
+                  Nhấn để xem chi tiết →
+                </div>
+              </div>
+              )
+            ))}
           </div>
         ) : (
-          <div style={{ padding: '16px', textAlign: 'center', background: '#fafafa', borderRadius: '10px', color: '#888', fontSize: '13px' }}>
-            Hiện tại không có bài đăng phù hợp với yêu cầu CV của bạn, hãy thử lại ở các khung giờ khác.
+          <div style={{ padding: '20px 16px', textAlign: 'center', background: '#fafafa', borderRadius: '10px', color: '#888', fontSize: '13px', lineHeight: 1.6 }}>
+            <div style={{ fontSize: '32px', marginBottom: '8px' }}>🤷</div>
+            Hiện tại không có bài đăng phù hợp với CV của bạn.<br />
+            Hãy cập nhật CV và thử lại!
           </div>
         )
       )}
     </div>
   );
 }
+
+const tagStyle = (bg, color) => ({
+  fontSize: '11px', fontWeight: '600', padding: '3px 8px',
+  borderRadius: '20px', background: bg, color,
+  whiteSpace: 'nowrap',
+});
 
 const labelStyle = {
   display: 'block', fontSize: '12px', fontWeight: '700', color: '#555',

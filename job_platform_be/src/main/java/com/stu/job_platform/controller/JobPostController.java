@@ -59,6 +59,14 @@ public class JobPostController {
         return ResponseEntity.ok(ApiResponse.success(jobPostService.getJobPost(id)));
     }
 
+    /**
+     * Lấy chi tiết bài đăng theo job_code (dùng cho AI match panel)
+     */
+    @GetMapping("/by-code/{jobCode}")
+    public ResponseEntity<ApiResponse<JobPostResponse>> getJobByCode(@PathVariable String jobCode) {
+        return ResponseEntity.ok(ApiResponse.success(jobPostService.getJobPostByCode(jobCode)));
+    }
+
     // ===== RECRUITER APIs (Cần đăng nhập + role RECRUITER) =====
 
     /**

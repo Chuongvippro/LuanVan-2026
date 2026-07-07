@@ -5,3 +5,7 @@ job_platform/target/
 job_platform/.idea/
 .vscode/
 **/.env
+# Env files (API keys - DO NOT commit)
+.env
+*.env
+job_platform_be/.env

@@ -28,12 +28,15 @@ export default function MockInterviewPanel({ onBack }) {
       setQuestion(res.data.data.question);
       setSessionId(res.data.data.sessionId);
       setStep(STEPS.QUESTION);
-    } catch {
-      setWarn('Không thể phân tích CV. Vui lòng thử lại!');
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || 'Không thể phân tích CV. Vui lòng thử lại!';
+      setWarn(msg);
+      console.error('[MockInterview] Lỗi start:', err?.response?.data || err);
     } finally {
       setLoading(false);
     }
   };
+
 
   // Bước 2: Gửi câu trả lời → kiểm tra → đánh giá
   const handleSubmit = async () => {
