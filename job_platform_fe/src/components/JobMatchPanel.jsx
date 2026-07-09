@@ -2,13 +2,16 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../service/api';
 
-function JobMatchPanel({ onBack }) {
+function JobMatchPanel({ onBack, hasProfileCv, profileCvUrl }) {
+  const [cvSource, setCvSource] = useState(hasProfileCv ? 'profile' : 'upload');
   const [uploadedFile, setUploadedFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const [jobs, setJobs] = useState(null); // null | [] | [JobPostResponse...]
+  const [jobs, setJobs] = useState(null);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
+
+  const profileCvName = profileCvUrl || 'CV của bạn';
 
   const handleFile = (file) => {
     if (!file) return;
@@ -26,31 +29,36 @@ function JobMatchPanel({ onBack }) {
   };
 
   const handleSearch = async () => {
-    if (!uploadedFile) { alert('Vui lòng upload CV của bạn!'); return; }
+    if (cvSource === 'upload' && !uploadedFile) {
+      alert('Vui lòng upload CV của bạn!');
+      return;
+    }
     setLoading(true);
     setJobs(null);
 
     try {
-      // Bước 1: AI trả về danh sách mã bài đăng
-      const formData = new FormData();
-      formData.append('cv', uploadedFile);
-      const res = await api.post('/ai/find-matching-jobs', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      let res;
+      if (cvSource === 'profile') {
+        res = await api.post('/ai/find-matching-jobs-profile'); 
+      } else {
+        const formData = new FormData();
+        formData.append('cv', uploadedFile);
+        res = await api.post('/ai/find-matching-jobs', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      }
 
       if (!res.data.success) { setJobs([]); return; }
 
       const codes = JSON.parse(res.data.data);
       if (!codes || codes.length === 0) { setJobs([]); return; }
 
-      // Bước 2: Fetch chi tiết từng bài đăng theo job_code
       const jobDetails = await Promise.all(
         codes.map(async (code) => {
           try {
             const r = await api.get(`/jobs/by-code/${code}`);
             return r.data.success ? r.data.data : { jobCode: code, title: code, _codeOnly: true };
           } catch {
-            // Fallback: hiển thị mã nếu chưa có endpoint by-code (cần restart backend)
             return { jobCode: code, title: code, _codeOnly: true };
           }
         })
@@ -84,53 +92,80 @@ function JobMatchPanel({ onBack }) {
         </div>
       </div>
 
-      {/* Upload CV */}
+      {/* Chọn nguồn CV */}
       <div>
-        <label style={labelStyle}>Tải lên CV của bạn</label>
-        <div
-          onClick={() => fileInputRef.current?.click()}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
-          style={{
-            ...dropzone,
-            borderColor: dragOver ? '#ed1b2f' : uploadedFile ? '#22c55e' : '#d1d5db',
-            background: dragOver ? '#fff5f5' : uploadedFile ? '#f0fdf4' : '#fafafa',
-          }}
-        >
-          <input ref={fileInputRef} type="file" accept=".pdf,.docx" style={{ display: 'none' }} onChange={(e) => handleFile(e.target.files[0])} />
-          {uploadedFile ? (
-            <>
-              <span style={{ fontSize: '28px' }}>✅</span>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: '#16a34a' }}>{uploadedFile.name}</div>
-                <div style={{ fontSize: '11px', color: '#888' }}>{(uploadedFile.size / 1024).toFixed(0)} KB</div>
-              </div>
-              <button onClick={(e) => { e.stopPropagation(); setUploadedFile(null); setJobs(null); }}
-                style={{ fontSize: '11px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>
-                Xóa và chọn lại
-              </button>
-            </>
-          ) : (
-            <>
-              <span style={{ fontSize: '32px' }}>📂</span>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: '#444' }}>Kéo thả hoặc bấm để chọn file</div>
-                <div style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>PDF hoặc DOCX · Tối đa 5MB</div>
-              </div>
-            </>
+        <label style={labelStyle}>CV của bạn</label>
+
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+          {hasProfileCv && (
+            <TabBtn active={cvSource === 'profile'} onClick={() => { setCvSource('profile'); setJobs(null); }}>
+              Hồ sơ cá nhân
+            </TabBtn>
           )}
+          <TabBtn active={cvSource === 'upload'} onClick={() => { setCvSource('upload'); setJobs(null); }}>
+            Upload CV mới
+          </TabBtn>
         </div>
+
+        {cvSource === 'profile' && hasProfileCv && (
+          <div style={profileCvBox}>
+            <span style={{ fontSize: '22px' }}>📋</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: '#222', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {profileCvName}
+              </div>
+              <div style={{ fontSize: '11px', color: '#888' }}>CV trong hồ sơ của bạn</div>
+            </div>
+            <span style={{ fontSize: '18px' }}>✅</span>
+          </div>
+        )}
+
+        {cvSource === 'upload' && (
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+            style={{
+              ...dropzone,
+              borderColor: dragOver ? '#ed1b2f' : uploadedFile ? '#22c55e' : '#d1d5db',
+              background: dragOver ? '#fff5f5' : uploadedFile ? '#f0fdf4' : '#fafafa',
+            }}
+          >
+            <input ref={fileInputRef} type="file" accept=".pdf,.docx" style={{ display: 'none' }} onChange={(e) => handleFile(e.target.files[0])} />
+            {uploadedFile ? (
+              <>
+                <span style={{ fontSize: '28px' }}>✅</span>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#16a34a' }}>{uploadedFile.name}</div>
+                  <div style={{ fontSize: '11px', color: '#888' }}>{(uploadedFile.size / 1024).toFixed(0)} KB</div>
+                </div>
+                <button onClick={(e) => { e.stopPropagation(); setUploadedFile(null); setJobs(null); }}
+                  style={{ fontSize: '11px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>
+                  Xóa và chọn lại
+                </button>
+              </>
+            ) : (
+              <>
+                <span style={{ fontSize: '32px' }}>📂</span>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#444' }}>Kéo thả hoặc bấm để chọn file</div>
+                  <div style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>PDF hoặc DOCX · Tối đa 5MB</div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Nút tìm */}
       <button
         onClick={handleSearch}
-        disabled={loading || !uploadedFile}
+        disabled={loading}
         style={{
-          padding: '13px', background: (loading || !uploadedFile) ? '#fca5a5' : '#ed1b2f',
+          padding: '13px', background: loading ? '#fca5a5' : '#ed1b2f',
           color: 'white', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '700',
-          cursor: (loading || !uploadedFile) ? 'not-allowed' : 'pointer',
+          cursor: loading ? 'not-allowed' : 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
           transition: 'background 0.2s',
         }}
@@ -152,7 +187,6 @@ function JobMatchPanel({ onBack }) {
             </div>
             {jobs.map((job) => (
               job._codeOnly ? (
-                // Fallback: chưa có chi tiết (cần restart backend)
                 <div
                   key={job.jobCode}
                   style={{
@@ -173,74 +207,69 @@ function JobMatchPanel({ onBack }) {
                   </button>
                 </div>
               ) : (
-
-              <div
-                key={job.id}
-                onClick={() => handleJobClick(job)}
-                style={{
-                  display: 'flex', flexDirection: 'column', gap: '8px',
-                  padding: '14px', background: '#fff',
-                  border: '1.5px solid #e5e5e5', borderRadius: '12px',
-                  cursor: 'pointer', transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.15s',
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = '#ed1b2f';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(237,27,47,0.12)';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = '#e5e5e5';
-                  e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
-              >
-                {/* Company row */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  {job.companyLogo ? (
-                    <img
-                      src={job.companyLogo}
-                      alt={job.companyName}
-                      style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'contain', border: '1px solid #f0f0f0', background: '#fff' }}
-                      onError={e => { e.target.style.display = 'none'; }}
-                    />
-                  ) : (
-                    <div style={{ width: 36, height: 36, borderRadius: 8, background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
-                      🏢
+                <div
+                  key={job.id}
+                  onClick={() => handleJobClick(job)}
+                  style={{
+                    display: 'flex', flexDirection: 'column', gap: '8px',
+                    padding: '14px', background: '#fff',
+                    border: '1.5px solid #e5e5e5', borderRadius: '12px',
+                    cursor: 'pointer', transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.15s',
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.borderColor = '#ed1b2f';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(237,27,47,0.12)';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.borderColor = '#e5e5e5';
+                    e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {job.companyLogo ? (
+                      <img
+                        src={job.companyLogo}
+                        alt={job.companyName}
+                        style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'contain', border: '1px solid #f0f0f0', background: '#fff' }}
+                        onError={e => { e.target.style.display = 'none'; }}
+                      />
+                    ) : (
+                      <div style={{ width: 36, height: 36, borderRadius: 8, background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
+                        🏢
+                      </div>
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '12px', color: '#888', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {job.companyName}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#bbb', fontFamily: 'monospace' }}>{job.jobCode}</div>
                     </div>
-                  )}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '12px', color: '#888', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {job.companyName}
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#bbb', fontFamily: 'monospace' }}>{job.jobCode}</div>
+                    <span style={{ fontSize: '14px', color: '#ccc' }}>→</span>
                   </div>
-                  <span style={{ fontSize: '14px', color: '#ccc' }}>→</span>
-                </div>
 
-                {/* Job title */}
-                <div style={{ fontSize: '14px', fontWeight: '700', color: '#121212', lineHeight: 1.3 }}>
-                  {job.title}
-                </div>
+                  <div style={{ fontSize: '14px', fontWeight: '700', color: '#121212', lineHeight: 1.3 }}>
+                    {job.title}
+                  </div>
 
-                {/* Tags */}
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  {job.salary && (
-                    <span style={tagStyle('#fef3c7', '#92400e')}>💰 {job.salary}</span>
-                  )}
-                  {job.location && (
-                    <span style={tagStyle('#eff6ff', '#1d4ed8')}>📍 {job.location}</span>
-                  )}
-                  {job.jobType && (
-                    <span style={tagStyle('#f0fdf4', '#15803d')}>⏱ {job.jobType}</span>
-                  )}
-                </div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {job.salary && (
+                      <span style={tagStyle('#fef3c7', '#92400e')}>💰 {job.salary}</span>
+                    )}
+                    {job.location && (
+                      <span style={tagStyle('#eff6ff', '#1d4ed8')}>📍 {job.location}</span>
+                    )}
+                    {job.jobType && (
+                      <span style={tagStyle('#f0fdf4', '#15803d')}>⏱ {job.jobType}</span>
+                    )}
+                  </div>
 
-                {/* CTA hint */}
-                <div style={{ fontSize: '11px', color: '#ed1b2f', fontWeight: 600 }}>
-                  Nhấn để xem chi tiết →
+                  <div style={{ fontSize: '11px', color: '#ed1b2f', fontWeight: 600 }}>
+                    Nhấn để xem chi tiết →
+                  </div>
                 </div>
-              </div>
               )
             ))}
           </div>
@@ -256,6 +285,28 @@ function JobMatchPanel({ onBack }) {
   );
 }
 
+function TabBtn({ active, onClick, children }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        flex: 1,
+        padding: '8px 12px',
+        borderRadius: '8px',
+        border: `1.5px solid ${active ? '#ed1b2f' : '#e0e0e0'}`,
+        background: active ? '#ed1b2f' : 'white',
+        color: active ? 'white' : '#555',
+        fontSize: '13px',
+        fontWeight: active ? '600' : '400',
+        cursor: 'pointer',
+        transition: 'all 0.15s',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
 const tagStyle = (bg, color) => ({
   fontSize: '11px', fontWeight: '600', padding: '3px 8px',
   borderRadius: '20px', background: bg, color,
@@ -265,6 +316,16 @@ const tagStyle = (bg, color) => ({
 const labelStyle = {
   display: 'block', fontSize: '12px', fontWeight: '700', color: '#555',
   textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px',
+};
+
+const profileCvBox = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
+  padding: '12px 14px',
+  background: '#f0fdf4',
+  border: '1.5px solid #86efac',
+  borderRadius: '10px',
 };
 
 const dropzone = {

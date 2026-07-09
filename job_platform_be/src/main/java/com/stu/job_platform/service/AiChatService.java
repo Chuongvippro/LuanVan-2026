@@ -23,6 +23,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import com.stu.job_platform.entity.AiConversation;
 import com.stu.job_platform.repository.AiConversationRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;  
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -49,6 +51,9 @@ public class AiChatService {
     private UserRepository userRepository;
 
 
+    @Value("${file.upload-dir}")
+    private String uploadDir;
+
 
     public AiChatService() {
         Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
@@ -73,11 +78,17 @@ public class AiChatService {
         Candidate candidate = candidateRepository.findById(candidateId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy ứng viên!"));
 
-        String cvPath = candidate.getCvPath();
-        if (cvPath == null) throw new RuntimeException("Bạn chưa có CV trong hồ sơ!");
+        String cvFileName = candidate.getCvPath();
+        if (cvFileName == null) throw new RuntimeException("Bạn chưa có CV trong hồ sơ!");
 
-        File file = new File(cvPath);
-        String cvText = cvPath.endsWith(".pdf")
+        // Ghép đúng path giống lúc lưu: uploadDir/cv/fileName
+        File file = java.nio.file.Paths.get(uploadDir, "cv", cvFileName).toFile();
+
+        if (!file.exists()) {
+            throw new RuntimeException("Không tìm thấy file CV trên server, vui lòng upload lại!");
+        }
+
+        String cvText = cvFileName.endsWith(".pdf")
                 ? extractTextFromPdf(file)
                 : extractTextFromDocx(file);
 
@@ -192,10 +203,30 @@ public class AiChatService {
         }
     }
 
-
-    // ── Tìm job phù hợp với CV ──
     public String findMatchingJobs(MultipartFile cvFile) throws IOException {
         String cvText = extractTextFromMultipart(cvFile);
+        return findMatchingJobs(cvText); // gọi qua bản overload bên dưới
+    }
+
+    // ── Tìm job bằng CV có sẵn trong hồ sơ (chỉ khác cách lấy cvText) ──
+    public String findMatchingJobsWithProfileCv(Integer candidateId) throws IOException {
+        Candidate candidate = candidateRepository.findById(candidateId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy ứng viên!"));
+
+        String cvFileName = candidate.getCvPath();
+        if (cvFileName == null) throw new RuntimeException("Bạn chưa có CV trong hồ sơ!");
+
+        File file = java.nio.file.Paths.get(uploadDir, "cv", cvFileName).toFile();
+        if (!file.exists()) throw new RuntimeException("Không tìm thấy file CV trên server, vui lòng upload lại!");
+
+        String cvText = cvFileName.endsWith(".pdf")
+                ? extractTextFromPdf(file)
+                : extractTextFromDocx(file);
+
+        return findMatchingJobs(cvText);
+    }
+    // ── Tìm job phù hợp với CV ──
+    public String findMatchingJobs(String cvText) {
 
         List<JobPost> activeJobs = jobPostRepository.findByStatus(1);
         if (activeJobs.isEmpty()) {

@@ -18,11 +18,12 @@ function Login() {
         const { accessToken, refreshToken } = res.data;
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
+        window.dispatchEvent(new Event('auth-changed'));
         
         const decoded = decodeToken(accessToken);
-        if (decoded.role === 'admin') navigate('/admin');
+        if (decoded.role === 'ADMIN') navigate('/admin');
         else if (decoded.role === 'recruiter') navigate('/my-posts');
-        else navigate('/jobs');
+        else navigate('/');
       } else {
         setError(res.data.message);
       }

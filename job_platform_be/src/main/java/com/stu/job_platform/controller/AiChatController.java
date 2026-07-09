@@ -46,12 +46,24 @@ public class AiChatController {
     }
 
     /** Tìm bài đăng tuyển dụng phù hợp với CV */
-    @PostMapping("/find-matching-jobs")
+    @PostMapping("/find-matching-jobs") 
     @PreAuthorize("hasRole('CANDIDATE')")
     public ResponseEntity<ApiResponse<String>> findMatchingJobs(
             @RequestParam("cv") MultipartFile cvFile) {
         try {
             return ResponseEntity.ok(ApiResponse.success("OK", aiChatService.findMatchingJobs(cvFile)));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(ApiResponse.error("Lỗi khi tìm việc phù hợp: " + e.getMessage()));
+        }
+    }
+
+    /** Tìm bài đăng phù hợp bằng CV có sẵn trong hồ sơ */
+    @PostMapping("/find-matching-jobs-profile")
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public ResponseEntity<ApiResponse<String>> findMatchingJobsProfile(Authentication auth) {
+        try {
+            return ResponseEntity.ok(ApiResponse.success("OK",
+                    aiChatService.findMatchingJobsWithProfileCv((Integer) auth.getPrincipal())));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(ApiResponse.error("Lỗi khi tìm việc phù hợp: " + e.getMessage()));
         }

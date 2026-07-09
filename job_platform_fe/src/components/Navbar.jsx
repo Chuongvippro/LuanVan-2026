@@ -1,17 +1,25 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { decodeToken } from '../service/api';
+import { useState, useEffect } from 'react';
+import api, { checkToken } from '../service/api';
 
 function Navbar() {
   const navigate = useNavigate();
-  const token = localStorage.getItem('accessToken');
-  let user = null;
-  if (token) {
-    try { user = decodeToken(token); } catch(e) {}
-  }
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  useEffect(() => {
+    const initUser = async () => {
+      const userData = await checkToken(); // Kiểm tra và tự động làm mới ngầm nếu cần
+      setUser(userData);
+      setIsLoading(false);
+    };
+    initUser();
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    window.dispatchEvent(new Event('auth-changed'));
+    setUser(null); // Xóa state user để Navbar chuyển về trạng thái Chưa đăng nhập ngay lập tức
     navigate('/login');
   };
 

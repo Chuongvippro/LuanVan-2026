@@ -30,6 +30,21 @@ public class ProfileController {
         return ResponseEntity.ok("Đã lưu thay đổi thành công!");
     }
 
+    //upload cv file for candidate
+    @PostMapping("/{userId}/upload-cv")
+    public ResponseEntity<?> uploadCv(@PathVariable Integer userId,
+                                    @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        try {
+            ProfileRequest updated = profileService.uploadCv(userId, file);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Lỗi upload CV!");
+        }
+    }
+
     // 3. Hàm duyệt từng ô độc lập
     @PostMapping("/verify-field/{userId}")
     public ResponseEntity<?> verifyField(@PathVariable Integer userId, @RequestBody Map<String, String> request) {

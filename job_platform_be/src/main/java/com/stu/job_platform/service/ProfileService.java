@@ -6,6 +6,7 @@ import com.stu.job_platform.repository.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 import java.util.*;
 
 @Service
@@ -15,6 +16,9 @@ public class ProfileService {
     @Autowired private CandidateRepository candidateRepository;
     @Autowired private RecruiterRepository recruiterRepository;
     @Autowired private AiVerificationService aiVerificationService;
+
+    @Value("${file.upload-dir}")
+    String uploadDir;
     
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -51,6 +55,7 @@ public class ProfileService {
             Candidate can = candidateRepository.findById(userId).orElse(new Candidate());
             dto.setPhone(can.getPhone());
             dto.setAddress(can.getAddress());
+            dto.setCvFileName(can.getCvPath());
             dto.setStatus(user.getStatus() != null ? user.getStatus().toString() : "1");
         }
         return dto;
@@ -105,6 +110,48 @@ public class ProfileService {
             candidateRepository.save(can);
         }
         return true;
+    }
+
+
+    //upload CV file for candidate
+    private static final List<String> ALLOWED_CV_EXT = List.of(".pdf", ".doc", ".docx");
+
+    public ProfileRequest uploadCv(Integer userId, org.springframework.web.multipart.MultipartFile file) throws java.io.IOException {
+        Candidate can = candidateRepository.findById(userId).orElse(new Candidate());
+        can.setId(userId);
+
+        String originalName = file.getOriginalFilename();
+        if (originalName == null || !originalName.contains(".")) {
+            throw new IllegalArgumentException("Tên file không hợp lệ");
+        }
+        String ext = originalName.substring(originalName.lastIndexOf('.')).toLowerCase();
+        if (!ALLOWED_CV_EXT.contains(ext)) {
+            throw new IllegalArgumentException("Chỉ chấp nhận PDF hoặc Word");
+        }
+        if (file.getSize() > 5 * 1024 * 1024) {
+            throw new IllegalArgumentException("File vượt quá 5MB");
+        }
+
+        java.nio.file.Path dirPath = java.nio.file.Paths.get(uploadDir, "cv");
+        if (!java.nio.file.Files.exists(dirPath)) {
+            java.nio.file.Files.createDirectories(dirPath);
+        }
+
+        String fileName = "cv_" + userId + "_" + UUID.randomUUID() + ext;
+        java.nio.file.Path filePath = dirPath.resolve(fileName);
+        file.transferTo(filePath.toFile());
+
+        if (can.getCvPath() != null) {
+            try {
+                java.nio.file.Files.deleteIfExists(dirPath.resolve(can.getCvPath()));
+            } catch (Exception ignored) {}
+        }
+
+        can.setCvPath(fileName);
+        candidateRepository.save(can);
+
+        // Trả lại profile mới nhất, đồng bộ format với getProfileData/updateProfileData
+        return getProfileData(userId, "candidate");
     }
 
     // Hàm lấy nhanh thông tin Recruiter phục vụ cho việc kiểm tra tuần tự ở Controller

@@ -5,7 +5,14 @@ job_platform/target/
 job_platform/.idea/
 .vscode/
 **/.env
+
+# Thư mục lưu file upload của Candidate/Recruiter (Không commit)
+job_platform_be/uploads/
+
 # Env files (API keys - DO NOT commit)
 .env
 *.env
 job_platform_be/.env
+
+# Giữ file cấu hình database local của máy nào máy đó xài, không đẩy lên Git nữa
+job_platform_be/src/main/resources/application.properties

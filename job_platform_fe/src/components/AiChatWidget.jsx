@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api, { decodeToken } from '../service/api';
+import api, { checkToken } from '../service/api';
 import CvEvaluationPanel from './CvEvaluationPanel';
 import JobMatchPanel from './JobMatchPanel';
-import MockInterviewPanel from './MockInterviewPanel';  // ← thêm
+import MockInterviewPanel from './MockInterviewPanel';
 
 const ACTION_BUTTONS = [
-  { id: 'evaluate_cv',    label: '📄 Đánh giá CV',       description: 'So khớp CV với bài tuyển dụng' },
+  { id: 'evaluate_cv',    label: '📄 Đánh giá CV',    description: 'So khớp CV với bài tuyển dụng' },
   { id: 'mock_interview', label: '🎤 Phỏng vấn thử',      description: 'Luyện tập câu hỏi phỏng vấn' },
   { id: 'find_jobs',      label: '🔍 Tìm việc phù hợp',   description: 'Gợi ý bài đăng việc làm phù hợp' },
 ];
@@ -18,24 +18,44 @@ function AiChatWidget() {
   const [cvResult, setCvResult] = useState(null);
   const navigate = useNavigate();
 
-  const token = localStorage.getItem('accessToken');
-  const user  = token ? decodeToken(token) : null;
-  const isCandidate = user?.role === 'candidate' || user?.role === 'ROLE_CANDIDATE';
+  const [user, setUser] = useState(null);
+  const [userChecked, setUserChecked] = useState(false);
+  
+  const isCandidate =
+    user?.role === 'candidate' || user?.role === 'ROLE_CANDIDATE';
 
+  // Giữ nguyên logic checkToken real-time chạy mượt mà của mày
+  useEffect(() => {
+    const loadUser = async () => {
+      const userData = await checkToken();
+      setUser(userData);
+      setUserChecked(true);
+    };
+
+    loadUser();
+    window.addEventListener('auth-changed', loadUser);
+
+    return () => window.removeEventListener('auth-changed', loadUser);
+  }, []);
+
+  // Gộp logic tối ưu load CV profile từ candidate của thằng kia
   useEffect(() => {
     const loadProfileCv = async () => {
+      if (!user) return;
       try {
-        const res = await api.get('/candidate/profile');
-        if (res.data.success && res.data.data?.cvUrl) {
-          setProfileCvUrl(res.data.data.cvUrl);
-        }
+        const res = await api.get(`/profile/${user.id}/${user.role}`);
+        setProfileCvUrl(res.data?.cvFileName  || null);
       } catch (err) {
-        console.error('Error loading profile CV:', err);
+        console.error('Error fetching profile CV:', err);
+        setProfileCvUrl(null);
       }
     };
+    
     // Chỉ load CV profile nếu user là candidate
-    if (isOpen && user && isCandidate && !profileCvUrl) loadProfileCv();
-  }, [isOpen, user]);
+    if (isOpen && user && isCandidate && !profileCvUrl) {
+      loadProfileCv();
+    }
+  }, [isOpen, user, isCandidate, profileCvUrl]);
 
   const handleActionSelect = (action) => { setActiveView(action.id); setCvResult(null); };
   const handleBackToMenu   = ()       => { setActiveView(null); setCvResult(null); };
@@ -46,6 +66,12 @@ function AiChatWidget() {
   const showFindJobsPanel  = activeView === 'find_jobs';
   const showMockInterview  = activeView === 'mock_interview';
 
+  // nếu k phải là recruiter thì mới hiển thị widget
+  const isRecruiter = user?.role === 'recruiter';
+
+  if (!userChecked) return null; // đang check, chưa biết -> không hiện gì
+  if (isRecruiter) return null;  // là recruiter -> ẩn luôn
+  
   return (
     <>
       <button className="ai-widget-btn" onClick={() => setIsOpen(!isOpen)} title="Trợ lý AI">
@@ -170,11 +196,14 @@ function AiChatWidget() {
 
         {showFindJobsPanel && (
           <div className="ai-chat-messages" style={{ overflowY: 'auto' }}>
-            <JobMatchPanel onBack={handleBackToMenu} />
+            <JobMatchPanel
+              onBack={handleBackToMenu}
+              hasProfileCv={!!profileCvUrl}
+              profileCvUrl={profileCvUrl}
+            />
           </div>
         )}
 
-        {/* ← Thay placeholder bằng MockInterviewPanel thật */}
         {showMockInterview && (
           <div className="ai-chat-messages" style={{ overflowY: 'auto' }}>
             <MockInterviewPanel onBack={handleBackToMenu} />
@@ -182,7 +211,6 @@ function AiChatWidget() {
         )}
       </div>
 
-      {/* Spinner animation dùng cho MockInterviewPanel */}
       <style>{`@keyframes mi-spin { to { transform: rotate(360deg); } }`}</style>
     </>
   );

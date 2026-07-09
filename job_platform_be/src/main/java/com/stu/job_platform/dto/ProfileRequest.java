@@ -11,6 +11,7 @@ public class ProfileRequest {
     private String fullName;
     private String phone;
     private String address;
+    private String cvFileName;
 
     // Riêng cho Nhà tuyển dụng (Recruiter)
     private String companyName;
@@ -34,6 +35,8 @@ public class ProfileRequest {
     public void setPhone(String phone) { this.phone = phone; }
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
+    public String getCvFileName() { return cvFileName; }
+    public void setCvFileName(String cvFileName) { this.cvFileName = cvFileName; }
     public String getCompanyName() { return companyName; }
     public void setCompanyName(String companyName) { this.companyName = companyName; }
     public String getCompanyEmail() { return companyEmail; }

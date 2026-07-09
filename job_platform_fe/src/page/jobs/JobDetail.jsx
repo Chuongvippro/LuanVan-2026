@@ -68,6 +68,20 @@ function JobDetail() {
     return `${baseUrl}${logoPath}`;
   };
 
+  //hiển thị trạng thái ứng tuyển với màu sắc khác nhau
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case -1:
+        return <span className="badge badge-danger">❌ Bị từ chối</span>;
+      case 0:
+        return <span className="badge badge-warning">⏳ Đang chờ</span>;
+      case 1:
+        return <span className="badge badge-success">✅ Đã chấp nhận</span>;
+      default:
+        return <span>Không xác định</span>;
+    }
+  };
+
   if (loading) return <div className="loading-spinner"><div className="spinner"></div></div>;
   if (!job) return <div className="page-container"><p>Bài đăng không tồn tại!</p></div>;
 

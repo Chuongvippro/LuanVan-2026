@@ -61,10 +61,9 @@ import { checkToken } from '../../service/api';
     },
   };
 
-  function EditModal({ item, onClose, onSave }) {
+  function EditModal({ item, onClose, onSave, industries = [] }) {
     const [form, setForm] = useState({ ...item.data });
 
-    // Track verified riêng, parse từ statusTrust gốc
     const [verifiedFields, setVerifiedFields] = useState(() => {
       const st = item.data.statusTrust || '';
       return {
@@ -72,10 +71,9 @@ import { checkToken } from '../../service/api';
         taxCode:     st.includes('tax')  || st.includes('verified'),
         websiteUrl:  st.includes('website') || st.includes('verified'),
       };
-    }); 
+    });
 
     const config = configByType[item.type] || { fields: [] };
-    // Tính trust dựa trên verifiedFields, không dựa vào form data
     const allVerified = verifiedFields.companyName && verifiedFields.taxCode && verifiedFields.websiteUrl;
     const trust = {
       status: allVerified ? 'verified' : 'pending',
@@ -83,40 +81,56 @@ import { checkToken } from '../../service/api';
       badge:  allVerified ? 'badge-active'   : 'badge-pending',
     };
 
-    // Map key trustGroup field → key verifiedFields
-    const fieldToVerifyKey = { companyName: 'companyName', taxCode: 'taxCode', websiteUrl: 'websiteUrl' };
-
     return (
       <div className="modal-overlay" onClick={onClose}>
         <div className="modal-box" onClick={e => e.stopPropagation()}>
           <h3>{item.data.id ? '✏️ Chỉnh sửa' : '➕ Thêm mới'}</h3>
 
-          {/* Render fields thường */}
           {config.fields.map(f => (
             <div key={f.key} className="form-group">
               <label>{f.label}</label>
-              <input
-                value={form[f.key] || ''}
-                onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
-              />
+
+              {/* ← Field industryId render thành select */}
+              {f.key === 'industryId' ? (
+                <select
+                  value={form[f.key] || ''}
+                  onChange={e => setForm(prev => ({
+                    ...prev,
+                    [f.key]: e.target.value ? Number(e.target.value) : ''
+                  }))}
+                  style={{ padding: '8px', width: '100%' }}
+                >
+                  <option value="">-- Chọn ngành --</option>
+                  {industries.map(ind => (
+                    <option key={ind.id} value={ind.id}>
+                      {ind.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  value={form[f.key] || ''}
+                  onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                />
+              )}
             </div>
           ))}
 
-          {/* Render trustGroup nếu có */}
+          {/* phần trustGroup giữ nguyên như cũ */}
           {config.trustGroup && (
             <div className="form-group">
               <label>{config.trustGroup.label}</label>
               {config.trustGroup.fields.map(f => (
                 <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'normal', marginTop: '6px' }}>
-                <input
-                  type="checkbox"
-                  checked={!!verifiedFields[f.key]}
-                  style={{ accentColor: '#16a34a', width: '16px', height: '16px' }}
-                  onChange={e => {
-                    const newVerifiedFields = { ...verifiedFields, [f.key]: e.target.checked };
-                    setVerifiedFields(newVerifiedFields);
-                  }}
-                />{f.label}
+                  <input
+                    type="checkbox"
+                    checked={!!verifiedFields[f.key]}
+                    style={{ accentColor: '#16a34a', width: '16px', height: '16px' }}
+                    onChange={e => {
+                      const newVerifiedFields = { ...verifiedFields, [f.key]: e.target.checked };
+                      setVerifiedFields(newVerifiedFields);
+                    }}
+                  />{f.label}
                 </label>
               ))}
               <span className={`badge ${trust.badge}`} style={{ marginTop: '10px', display: 'inline-block' }}>
@@ -130,11 +144,10 @@ import { checkToken } from '../../service/api';
               className="btn btn-primary"
               onClick={() => onSave(item.type, {
                 ...form,
-                // nếu có trustGroup thì gửi kèm status đã tính
-                ...(config.trustGroup && { 
+                ...(config.trustGroup && {
                   verifiedName:    verifiedFields.companyName,
                   verifiedTax:     verifiedFields.taxCode,
-                  verifiedWebsite: verifiedFields.websiteUrl, 
+                  verifiedWebsite: verifiedFields.websiteUrl,
                 })
               })}
             >
@@ -275,15 +288,26 @@ function AdminDashboard() {
   };
 
   // ===== HOOKS =====
-
+  //STATE chặn render khi chưa check xong quyền
+  const [isValidating, setIsValidating] = useState(true);
   useEffect(() => {
     const init = async () => {
-      const userData = await checkToken();
-      if (!userData || userData.role?.toLowerCase() !== 'admin') {
-        alert('⚠️ Bạn không có quyền truy cập trang này!');
+      try{
+        const userData = await checkToken();
+        if (!userData || userData.role?.toLowerCase() !== 'admin') {
+            alert('⚠️ Bạn không có quyền truy cập trang này!');
+
+            navigate('/');
+
+            return;
+        }
+        setIsValidating(false);
+        await fetchStats();
+      }catch(err){
+        console.error(err);
+        alert('Đã xảy ra lỗi khi kiểm tra quyền truy cập. Vui lòng thử lại.');
         navigate('/');
       }
-      await fetchStats();
     };
     init();
   }, [navigate]);
@@ -364,7 +388,9 @@ function AdminDashboard() {
 
   
 
-
+  if (isValidating) {
+    return <div className="admin-loading">Đang kiểm tra quyền truy cập...</div>;
+  }
   return (
     <div className="admin-layout">
       {/* Sidebar */}
@@ -757,6 +783,7 @@ function AdminDashboard() {
           onClose={() => setEditingItem(null)}
           onSave={handleSave}
           configByType={configByType}  
+          industries={industries}
         />
       )}
     </div>

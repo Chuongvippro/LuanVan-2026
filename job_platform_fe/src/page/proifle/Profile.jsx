@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api, { decodeToken } from '../../service/api';
+import api, { decodeToken, checkToken } from '../../service/api';
 import './profile.css';
 
 function EditableField({ label, value, onSave }) {
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState(value || '');
   const [prevValue, setPrevValue] = useState(value);
+
 
   if (value !== prevValue) {
     setPrevValue(value);
@@ -40,6 +41,7 @@ function EditableField({ label, value, onSave }) {
   );
 }
 
+
 function ReadOnlyField({ label, value }) {
   return (
     <div className="profile-field-item readonly" style={{ flex: 1, marginBottom: 0 }}>
@@ -56,13 +58,14 @@ function Profile() {
   const [loading, setLoading] = useState(true);
   const [notify, setNotify] = useState({ type: '', msg: '' });
   const [aiLoadingField, setAiLoadingField] = useState('');
+  const [showCvPreview, setShowCvPreview] = useState(false);
+
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfile = async () => {
-      let token = localStorage.getItem('accessToken');
-      if (!token) { navigate('/login'); return; }
-      const user = decodeToken(token);
+      const user = await checkToken();
+      if (!user) { navigate('/login'); return; }
       try {
         const res = await api.get(`/profile/${user.id}/${user.role}`);
         setProfileData(res.data);
@@ -78,8 +81,8 @@ function Profile() {
   const handleUpdateField = async (fieldName, updatedValue) => {
     const updatedData = { ...profileData, [fieldName]: updatedValue };
     try {
-      const token = localStorage.getItem('accessToken');
-      const user = decodeToken(token);
+      const user = await checkToken(); // Kiểm tra token trước khi gửi request
+      if (!user) { navigate('/login'); return; }
       await api.put(`/profile/${user.id}/${profileData.role}`, updatedData);
       setNotify({ type: 'success', msg: 'Đã lưu thay đổi!' });
       setTimeout(() => setNotify({ type: '', msg: '' }), 2000);
@@ -90,6 +93,126 @@ function Profile() {
     }
   };
 
+  const [cvFile, setCvFile] = useState(null);
+  const [uploadingCv, setUploadingCv] = useState(false);
+
+  // --- Blob CV (Hướng B: lấy file qua axios kèm token, không gọi thẳng URL) ---
+  const [cvBlobUrl, setCvBlobUrl] = useState('');
+  const [cvBlobLoading, setCvBlobLoading] = useState(false);
+
+  // Dọn dẹp object URL khi unmount để tránh rò rỉ bộ nhớ
+  useEffect(() => {
+    return () => {
+      if (cvBlobUrl) URL.revokeObjectURL(cvBlobUrl);
+    };
+  }, [cvBlobUrl]);
+
+  const handleCvChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const allowedExt = ['.pdf', '.doc', '.docx'];
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (!allowedExt.includes(ext)) {
+      setNotify({ type: 'error', msg: 'Chỉ chấp nhận file PDF hoặc Word (.doc, .docx)!' });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setNotify({ type: 'error', msg: 'File tối đa 5MB!' });
+      return;
+    }
+    setCvFile(file);
+  };
+
+  const handleUploadCv = async () => {
+    if (!cvFile) {
+      setNotify({ type: 'error', msg: 'Chưa chọn file CV!' });
+      return;
+    }
+    setUploadingCv(true);
+    try {
+      const user = await checkToken();
+      if (!user) { navigate('/login'); return; }
+
+      const formData = new FormData();
+      formData.append('file', cvFile);
+
+      const res = await api.post(`/profile/${user.id}/upload-cv`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      setProfileData(res.data);
+      setNotify({ type: 'success', msg: 'Tải CV lên thành công!' });
+      setCvFile(null);
+
+      // CV vừa đổi thì blob cũ (nếu đang mở) không còn hợp lệ nữa
+      if (cvBlobUrl) {
+        URL.revokeObjectURL(cvBlobUrl);
+        setCvBlobUrl('');
+      }
+    } catch (err) {
+      setNotify({ type: 'error', msg: 'Lỗi tải CV lên!' });
+      console.error(err);
+    } finally {
+      setUploadingCv(false);
+    }
+  };
+
+  // Lấy CV dưới dạng blob qua axios (tự động đính token như các API khác)
+  const fetchCvBlob = async () => {
+    if (!profileData?.cvFileName) return null;
+    const user = await checkToken();
+    if (!user) { navigate('/login'); return null; }
+
+    try {
+      const res = await api.get(`/files/cv/${profileData.cvFileName}`, {
+        responseType: 'blob',
+      });
+      return res.data;
+    } catch (err) {
+      setNotify({ type: 'error', msg: 'Không thể tải CV!' });
+      console.error(err);
+      return null;
+    }
+  };
+
+  const openCvPreview = async () => {
+    setCvBlobLoading(true);
+    const blob = await fetchCvBlob();
+    setCvBlobLoading(false);
+    if (!blob) return;
+
+    // Ép đúng mime type PDF để iframe render đúng, tránh browser đoán sai
+    const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+    if (cvBlobUrl) URL.revokeObjectURL(cvBlobUrl);
+    const url = URL.createObjectURL(pdfBlob);
+    setCvBlobUrl(url);
+    setShowCvPreview(true);
+  };
+
+  const closeCvPreview = () => {
+    if (cvBlobUrl) URL.revokeObjectURL(cvBlobUrl);
+    setCvBlobUrl('');
+    setShowCvPreview(false);
+  };
+
+  const downloadCvWord = async () => {
+    setCvBlobLoading(true);
+    const blob = await fetchCvBlob();
+    setCvBlobLoading(false);
+    if (!blob) return;
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = profileData.cvFileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+
   const handleVerifySingleField = async (fieldType, value) => {
     if (!value?.trim()) {
       alert("Điền dữ liệu vào ô trước khi quét!");
@@ -99,8 +222,8 @@ function Profile() {
     setNotify({ type: 'info', msg: 'Đang xác thực với AI...' });
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const user = decodeToken(token);
+      const user = await checkToken();
+      if (!user) { navigate('/login'); return; }
 
       // Đồng bộ trước khi quét
       const updatedData = { ...profileData, [fieldType]: value };
@@ -154,6 +277,13 @@ function Profile() {
   const currentPoint = profileData.point ?? 80;
   const isLowTrust = isRecruiter && currentPoint <= 80;
 
+  // Hiển thị CV: không còn dùng URL trực tiếp (cvUrl) vì route yêu cầu token,
+  // giờ lấy file qua axios (fetchCvBlob) rồi tạo blob URL tạm để xem/tải.
+  const cvExt = profileData.cvFileName
+    ? profileData.cvFileName.substring(profileData.cvFileName.lastIndexOf('.')).toLowerCase()
+    : '';
+  const isCvPdf = cvExt === '.pdf';
+
   return (
     <div className="profile-wrapper">
       <div className="profile-header">
@@ -175,7 +305,7 @@ function Profile() {
         <div className="account-info-grid">
           <ReadOnlyField label="Tên tài khoản" value={profileData.name} />
           <ReadOnlyField label="Email đăng ký" value={profileData.email} />
-          <ReadOnlyField label="Vai trò" value={profileData.role} />
+          <ReadOnlyField label="Vai trò" value={profileData.role === "candidate" ? "Ứng viên" : "Nhà tuyển dụng"} />
           {isRecruiter && <ReadOnlyField label="Email công ty" value={profileData.companyEmail} />}
         </div>
 
@@ -211,10 +341,68 @@ function Profile() {
             <div className="verify-row-layout" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', marginBottom: 0 }}>
               <EditableField label="Địa chỉ" value={profileData.address} onSave={(val) => handleUpdateField('address', val)} />
             </div>
+            {/* --- Phần CV --- */}
+            <div className="cv-section" style={{ marginTop: '20px' }}>
+              <span className="field-label">CV hiện tại:</span>
+
+              {profileData.cvFileName ? (
+                <div className="cv-current-display" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
+                  {isCvPdf ? (
+                    <button type="button" className="cv-link" onClick={openCvPreview} disabled={cvBlobLoading}>
+                      {cvBlobLoading ? '⏳ Đang tải...' : '📄 Xem CV đã tải lên'}
+                    </button>
+                  ) : (
+                    <button type="button" className="cv-link" onClick={downloadCvWord} disabled={cvBlobLoading}>
+                      {cvBlobLoading ? '⏳ Đang tải...' : '📄 Tải xuống để xem CV (Word)'}
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="field-empty" style={{ marginTop: '8px' }}>
+                  (Chưa có CV nào được tải lên)
+                </div>
+              )}
+
+              <div className="cv-upload-row" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px' }}>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  onChange={handleCvChange}
+                  id="cv-file-input"
+                  style={{ display: 'none' }}
+                />
+                <label htmlFor="cv-file-input" className="cv-choose-btn" style={{ cursor: 'pointer' }}>
+                  📎 Chọn file CV
+                </label>
+
+                {cvFile && <span className="cv-filename">{cvFile.name}</span>}
+
+                <button
+                  className="mini-verify-btn"
+                  onClick={handleUploadCv}
+                  disabled={!cvFile || uploadingCv}
+                >
+                  {uploadingCv ? '⏳ Đang tải...' : 'Tải lên'}
+                </button>
+              </div>
+            </div>
           </>
         )}
       </div>
+      {showCvPreview && (
+        <div className="cv-preview-overlay" onClick={closeCvPreview}>
+          <div className="cv-preview-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="cv-preview-header">
+              <span>Xem CV</span>
+              <button className="cv-preview-close" onClick={closeCvPreview}>✕</button>
+            </div>
+            {cvBlobUrl && <iframe src={cvBlobUrl} title="CV Preview" className="cv-preview-frame" />}
+          </div>
+        </div>
+      )}
     </div>
+
+
   );
 }
 

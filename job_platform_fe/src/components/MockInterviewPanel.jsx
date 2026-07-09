@@ -3,8 +3,9 @@ import api from '../service/api';
 
 const STEPS = { UPLOAD: 'upload', QUESTION: 'question', ANSWERING: 'answering', RESULT: 'result' };
 
-export default function MockInterviewPanel({ onBack }) {
+export default function MockInterviewPanel({ onBack, hasProfileCv, profileCvUrl }) {
   const [step, setStep] = useState(STEPS.UPLOAD);
+  const [cvSource, setCvSource] = useState(hasProfileCv ? 'profile' : 'upload');
   const [cvFile, setCvFile] = useState(null);
   const [question, setQuestion] = useState('');
   const [sessionId, setSessionId] = useState(null);
@@ -14,17 +15,23 @@ export default function MockInterviewPanel({ onBack }) {
   const [loading, setLoading] = useState(false);
   const [aiGenerated, setAiGenerated] = useState(false);
 
+  const profileCvName = profileCvUrl || 'CV của bạn';
 
-  // Bước 1: Upload CV → nhận câu hỏi
+  // Bước 1: Upload CV (hoặc dùng CV hồ sơ) → nhận câu hỏi
   const handleStart = async () => {
-    if (!cvFile) return;
+    if (cvSource === 'upload' && !cvFile) return;
     setLoading(true); setWarn('');
     try {
-      const formData = new FormData();
-      formData.append('cv', cvFile);
-      const res = await api.post('/ai/interview/start', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      let res;
+      if (cvSource === 'profile') {
+        res = await api.post('/ai/interview/start', { useProfileCv: true });
+      } else {
+        const formData = new FormData();
+        formData.append('cv', cvFile);
+        res = await api.post('/ai/interview/start', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      }
       setQuestion(res.data.data.question);
       setSessionId(res.data.data.sessionId);
       setStep(STEPS.QUESTION);
@@ -60,6 +67,7 @@ export default function MockInterviewPanel({ onBack }) {
 
   const handleReset = () => {
     setStep(STEPS.UPLOAD); setCvFile(null);
+    setCvSource(hasProfileCv ? 'profile' : 'upload');
     setQuestion(''); setSessionId(null);
     setAnswer(''); setEvaluation(''); setWarn('');
   };
@@ -129,32 +137,65 @@ export default function MockInterviewPanel({ onBack }) {
       {/* BƯỚC 1: UPLOAD */}
       {step === STEPS.UPLOAD && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <label style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            gap: 8, border: `2px dashed ${cvFile ? '#00b14f' : '#d0d0d0'}`,
-            borderRadius: 10, padding: '28px 16px', cursor: 'pointer', textAlign: 'center',
-            background: cvFile ? '#f0faf5' : '#fafafa', transition: '0.2s',
-          }}>
-            <span style={{ fontSize: 28 }}>{cvFile ? '📄' : '⬆️'}</span>
-            {cvFile ? (
-              <>
-                <span style={{ fontSize: 14, fontWeight: 700, color: '#121212' }}>{cvFile.name}</span>
-                <span style={{ fontSize: 12, color: '#767676' }}>{(cvFile.size / 1024).toFixed(0)} KB — bấm để đổi file</span>
-              </>
-            ) : (
-              <>
-                <span style={{ fontSize: 14, fontWeight: 600, color: '#4a4a4a' }}>Bấm để tải CV lên</span>
-                <span style={{ fontSize: 12, color: '#aaa' }}>PDF hoặc DOCX, tối đa 5MB</span>
-              </>
+          <FieldLabel>CV của bạn</FieldLabel>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {hasProfileCv && (
+              <TabBtn active={cvSource === 'profile'} onClick={() => { setCvSource('profile'); setWarn(''); }}>
+                Hồ sơ cá nhân
+              </TabBtn>
             )}
-            <input type="file" accept=".pdf,.docx" style={{ display: 'none' }}
-              onChange={(e) => {
-                const f = e.target.files[0];
-                if (f && f.size > 5 * 1024 * 1024) { setWarn('File quá lớn! Tối đa 5MB.'); return; }
-                setCvFile(f || null); setWarn('');
-              }} />
-          </label>
-          <PanelBtn disabled={!cvFile || loading} onClick={handleStart} loading={loading}>
+            <TabBtn active={cvSource === 'upload'} onClick={() => { setCvSource('upload'); setWarn(''); }}>
+              Upload CV mới
+            </TabBtn>
+          </div>
+
+          {cvSource === 'profile' && hasProfileCv && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '12px',
+              padding: '12px 14px', background: '#f0fdf4',
+              border: '1.5px solid #86efac', borderRadius: '10px',
+            }}>
+              <span style={{ fontSize: '22px' }}>📋</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: '#222', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {profileCvName}
+                </div>
+                <div style={{ fontSize: '11px', color: '#888' }}>CV trong hồ sơ của bạn</div>
+              </div>
+              <span style={{ fontSize: '18px' }}>✅</span>
+            </div>
+          )}
+
+          {cvSource === 'upload' && (
+            <label style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              gap: 8, border: `2px dashed ${cvFile ? '#00b14f' : '#d0d0d0'}`,
+              borderRadius: 10, padding: '28px 16px', cursor: 'pointer', textAlign: 'center',
+              background: cvFile ? '#f0faf5' : '#fafafa', transition: '0.2s',
+            }}>
+              <span style={{ fontSize: 28 }}>{cvFile ? '📄' : '⬆️'}</span>
+              {cvFile ? (
+                <>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#121212' }}>{cvFile.name}</span>
+                  <span style={{ fontSize: 12, color: '#767676' }}>{(cvFile.size / 1024).toFixed(0)} KB — bấm để đổi file</span>
+                </>
+              ) : (
+                <>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: '#4a4a4a' }}>Bấm để tải CV lên</span>
+                  <span style={{ fontSize: 12, color: '#aaa' }}>PDF hoặc DOCX, tối đa 5MB</span>
+                </>
+              )}
+              <input type="file" accept=".pdf,.docx" style={{ display: 'none' }}
+                onChange={(e) => {
+                  const f = e.target.files[0];
+                  if (f && f.size > 5 * 1024 * 1024) { setWarn('File quá lớn! Tối đa 5MB.'); return; }
+                  setCvFile(f || null); setWarn('');
+                }} />
+            </label>
+          )}
+
+          <PanelBtn disabled={(cvSource === 'upload' && !cvFile) || loading} onClick={handleStart} loading={loading}>
             🎙 Bắt đầu phỏng vấn
           </PanelBtn>
         </div>
@@ -270,6 +311,28 @@ function QuestionBox({ children, compact }) {
     }}>
       {children}
     </div>
+  );
+}
+
+function TabBtn({ active, onClick, children }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        flex: 1,
+        padding: '8px 12px',
+        borderRadius: '8px',
+        border: `1.5px solid ${active ? '#ed1b2f' : '#e0e0e0'}`,
+        background: active ? '#ed1b2f' : 'white',
+        color: active ? 'white' : '#555',
+        fontSize: '13px',
+        fontWeight: active ? '600' : '400',
+        cursor: 'pointer',
+        transition: 'all 0.15s',
+      }}
+    >
+      {children}
+    </button>
   );
 }
 

@@ -12,7 +12,8 @@ function RecruiterDashboard() {
 
   useEffect(() => {
     if (!user || user.role !== 'recruiter') {
-      navigate('/login');
+      alert('Bạn không có quyền truy cập vào trang này. Vui lòng đăng nhập với tài khoản nhà tuyển dụng.');
+      navigate('/');
       return;
     }
     fetchMyJobs();
