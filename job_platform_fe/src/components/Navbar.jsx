@@ -13,6 +13,8 @@ function Navbar() {
       setIsLoading(false);
     };
     initUser();
+    window.addEventListener('auth-changed', initUser);
+    return () => window.removeEventListener('auth-changed', initUser);
   }, []);
 
   const handleLogout = () => {

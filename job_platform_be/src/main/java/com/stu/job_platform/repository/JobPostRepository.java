@@ -47,4 +47,9 @@ public interface JobPostRepository extends JpaRepository<JobPost, Integer> {
     Optional<JobPost> findByJobCode(String jobCode);
 
     List<JobPost> findByStatus(Integer status);
+
+
+    long countByRecruiterIdAndStatus(Integer recruiterId, Integer status);
+
+    long countByRecruiterIdAndStatusNot(Integer recruiterId, Integer status);
 }

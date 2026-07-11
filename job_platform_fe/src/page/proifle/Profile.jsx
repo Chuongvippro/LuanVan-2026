@@ -275,7 +275,7 @@ function Profile() {
 
   // Cảnh báo điểm tin cậy thấp, chỉ hiển thị, không chặn thao tác
   const currentPoint = profileData.point ?? 80;
-  const isLowTrust = isRecruiter && currentPoint <= 80;
+  const isLowTrust = isRecruiter && currentPoint <= 90;
 
   // Hiển thị CV: không còn dùng URL trực tiếp (cvUrl) vì route yêu cầu token,
   // giờ lấy file qua axios (fetchCvBlob) rồi tạo blob URL tạm để xem/tải.

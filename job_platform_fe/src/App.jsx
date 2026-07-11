@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AiChatWidget from './components/AiChatWidget';
+import BugReportWidget from './components/BugReportWidget';
 
 // Pages
 import Home from './page/home/Home';
@@ -65,6 +66,7 @@ function App() {
 
       <Footer />
       <AiChatWidget />
+      <BugReportWidget />
     </BrowserRouter>
   );
 }

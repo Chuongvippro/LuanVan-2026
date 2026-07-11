@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 @Service
 public class JobPostService {
 
+    private final ContentModerationService contentModerationService;
     @Autowired
     private JobPostRepository jobPostRepository;
     @Autowired
@@ -32,6 +33,10 @@ public class JobPostService {
 
     private static final String CHARACTERS =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+    JobPostService(ContentModerationService contentModerationService) {
+        this.contentModerationService = contentModerationService;
+    }
 
     private String generateJobCode() {
 
@@ -65,6 +70,24 @@ public class JobPostService {
         Recruiter recruiter = recruiterRepository.findById(recruiterId)
                 .orElseThrow(() -> new RuntimeException("Nhà tuyển dụng không tồn tại!"));
 
+        boolean isVerified = recruiter.getStatusTrust() != null  && recruiter.getStatusTrust().contains("verified");
+        int currentTrustPoint = recruiter.getPoint() != null ? recruiter.getPoint() : 0;
+        if(currentTrustPoint < 90 && !isVerified){
+            long activeJobCount = jobPostRepository.countByRecruiterIdAndStatusNot(recruiterId, -1);
+            if(activeJobCount >= 1){
+                throw new RuntimeException("Tài khoản của bạn chưa xác thực đầy đủ, vui lòng xác thực để đăng thêm bài tuyển dụng. Hiện tại bạn chỉ được đăng 1 bài tuyển dụng khi chưa xác thực!");
+            }
+        }
+        
+        if(contentModerationService.containsBannedWord(
+            request.getTitle(),
+            request.getJdText(),
+            request.getRequirements(),
+            request.getBenefits()
+        )){
+            throw new RuntimeException("Nội dung bài đăng chứa từ cấm. Vui lòng kiểm tra lại!");
+        }
+        
         JobPost jobPost = new JobPost();
         jobPost.setTitle(request.getTitle());
         jobPost.setSalary(request.getSalary());
@@ -96,6 +119,15 @@ public class JobPostService {
 
         if (!jobPost.getRecruiter().getId().equals(recruiterId)) {
             throw new RuntimeException("Bạn không có quyền sửa bài đăng này!");
+        }
+
+        if(contentModerationService.containsBannedWord(
+            request.getTitle(),
+            request.getJdText(),
+            request.getRequirements(),
+            request.getBenefits()
+        )){
+            throw new RuntimeException("Nội dung bài đăng chứa từ cấm. Vui lòng kiểm tra lại!");
         }
 
         jobPost.setTitle(request.getTitle());

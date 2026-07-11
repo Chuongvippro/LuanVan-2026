@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { href, useNavigate } from 'react-router-dom';
 import api, { decodeToken } from '../../service/api';
 import './AdminDashboard.css';
 import { checkToken } from '../../service/api';
+const API_ORIGIN = import.meta.env.VITE_API_ORIGIN || 'http://localhost:8080';
 
 
     //modal sửa dữ liệu
@@ -171,6 +172,8 @@ function AdminDashboard() {
   const [industries, setIndustries] = useState([]);
   const [categories, setCategories] = useState([]);
   const [showAddIndustry, setShowAddIndustry] = useState(false);
+  const [previewImgUrl, setPreviewImgUrl] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   const [user] = useState(() => {
     const token = localStorage.getItem('accessToken');
@@ -231,6 +234,32 @@ function AdminDashboard() {
       console.error(err);
       alert('Không thể tải danh sách bug!');
     }
+  };
+
+  //lây link ảnh preview, mở ảnh khi click vào bug
+  useEffect(() => {
+    return () => { if (previewImgUrl) URL.revokeObjectURL(previewImgUrl); };
+  }, [previewImgUrl]);
+
+  const openScreenshotPreview = async (bug) => {
+    if (!bug.screenshotPath) return;
+    setPreviewLoading(true);
+    try {
+      // screenshotPath dạng "/uploads/bug/uuid_ten-file.png" -> lấy tên file
+      const fileName = bug.screenshotPath.split('/').pop();
+      const res = await api.get(`/files/bug/${fileName}`, { responseType: 'blob' });
+      if (previewImgUrl) URL.revokeObjectURL(previewImgUrl);
+      setPreviewImgUrl(URL.createObjectURL(res.data));
+    } catch (err) {
+      console.error(err);
+      alert('Không thể tải ảnh!');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+  const closeScreenshotPreview = () => {
+    if (previewImgUrl) URL.revokeObjectURL(previewImgUrl);
+    setPreviewImgUrl('');
   };
 
   const fetchIndustries = async () => {
@@ -731,6 +760,7 @@ function AdminDashboard() {
                   <th>ID</th>
                   <th>Tiêu đề</th>
                   <th>Mô tả</th>
+                  <th>Ảnh minh họa</th>
                   <th>Người báo cáo</th>
                   <th>Trạng thái</th>
                   <th>Hành động</th>
@@ -744,6 +774,20 @@ function AdminDashboard() {
                     <td style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                         title={bug.description}>
                       {bug.description}
+                    </td>
+                    <td>
+                      {bug.screenshotPath
+                        ? (
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-sm"
+                            onClick={() => openScreenshotPreview(bug)}
+                            disabled={previewLoading}
+                          >
+                            {previewLoading ? '⏳...' : '🖼️ Xem ảnh'}
+                          </button>
+                        )
+                        : <span style={{ color: '#9ca3af' }}>Không có ảnh</span>}
                     </td>
                     <td><strong>{bug.user ? bug.user.id : 'N/A'}</strong></td>
                     <td>
@@ -786,7 +830,21 @@ function AdminDashboard() {
           industries={industries}
         />
       )}
+
+      //xem ảnh minh họa lỗi
+      {previewImgUrl && (
+        <div className="modal-overlay" onClick={closeScreenshotPreview}>
+          <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <h3>🖼️ Ảnh minh họa lỗi</h3>
+            <img src={previewImgUrl} alt="Ảnh lỗi" style={{ width: '100%', borderRadius: '8px', marginTop: '10px' }} />
+            <div className="modal-actions">
+              <button className="btn btn-ghost" onClick={closeScreenshotPreview}>Đóng</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+    
   );
 
 
