@@ -84,4 +84,19 @@ public class ProfileController {
             return ResponseEntity.ok(Map.of("status", "FAILED", "reason", "Lỗi xử lý hệ thống!"));
         }
     }
+
+
+    @PostMapping("/change-password/{userId}")
+    public ResponseEntity<?> changePassWord(@PathVariable Integer userId, @RequestBody Map<String, String> request) {
+        try{
+        String oldPassword = request.get("oldPassword");
+        String newPassword = request.get("newPassword");
+
+        profileService.changePassword(userId, oldPassword, newPassword);
+        return ResponseEntity.ok("Đổi mật khẩu thành công!");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Lỗi đổi mật khẩu!");
+        }
+    }
 }

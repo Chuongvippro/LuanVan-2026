@@ -59,6 +59,9 @@ function Profile() {
   const [notify, setNotify] = useState({ type: '', msg: '' });
   const [aiLoadingField, setAiLoadingField] = useState('');
   const [showCvPreview, setShowCvPreview] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passWordData, setPassWordData] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+  const [passWordLoading, setPassWordLoading] = useState(false);
 
   const navigate = useNavigate();
 
@@ -284,10 +287,43 @@ function Profile() {
     : '';
   const isCvPdf = cvExt === '.pdf';
 
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    if (!passWordData.oldPassword || !passWordData.newPassword || !passWordData.confirmPassword) {
+      setNotify({ type: 'error', msg: 'Vui lòng điền đầy đủ thông tin!' });
+      return;
+    }
+    if(passWordData.newPassword !== passWordData.confirmPassword) {
+      setNotify({ type: 'error', msg: 'Mật khẩu mới và xác nhận mật khẩu không khớp!' });
+      return;
+    }
+    if(passWordData.newPassword.length < 6) {
+      setNotify({ type: 'error', msg: 'Mật khẩu mới phải có ít nhất 6 ký tự!' });
+      return;
+    }
+    setPassWordLoading(true);
+    try{
+      const user = await checkToken();
+      if (!user) { navigate('/login'); return; }
+
+      await api.post(`/profile/change-password/${user.id}`, {oldPassword: passWordData.oldPassword, newPassword: passWordData.newPassword});
+      setPassWordData({oldPassword: '', newPassword: '', confirmPassword: ''});
+      setShowPasswordModal(false);
+      setNotify({ type: 'success', msg: 'Đổi mật khẩu thành công!' });
+      setTimeout(() => setNotify({ type: '', msg: '' }), 2000);
+    }catch(err){
+      const errMsg = err.response?.data?.message || 'Lỗi đổi mật khẩu!';
+      setNotify({ type: 'error', msg: errMsg });
+    }finally{
+      setPassWordLoading(false);
+    }
+  };
   return (
     <div className="profile-wrapper">
       <div className="profile-header">
         <h2>{isRecruiter ? 'HỒ SƠ NHÀ TUYỂN DỤNG' : 'HỒ SƠ ỨNG VIÊN'}</h2>
+        
         {isRecruiter && (
           <span className={`status-badge ${badge.class}`}>Trạng thái: {badge.text}</span>
         )}
@@ -306,6 +342,13 @@ function Profile() {
           <ReadOnlyField label="Tên tài khoản" value={profileData.name} />
           <ReadOnlyField label="Email đăng ký" value={profileData.email} />
           <ReadOnlyField label="Vai trò" value={profileData.role === "candidate" ? "Ứng viên" : "Nhà tuyển dụng"} />
+          <button 
+            className="mini-verify-btn" 
+            style={{ backgroundColor: '#6c757d', color: '#fff' }} 
+            onClick={() => setShowPasswordModal(true)}
+          >
+            🔒 Đổi mật khẩu
+          </button>
           {isRecruiter && <ReadOnlyField label="Email công ty" value={profileData.companyEmail} />}
         </div>
 
@@ -386,6 +429,7 @@ function Profile() {
                 </button>
               </div>
             </div>
+            
           </>
         )}
       </div>
@@ -400,9 +444,74 @@ function Profile() {
           </div>
         </div>
       )}
+
+      {/* --- Modal Đổi Mật Khẩu --- */}
+      {showPasswordModal && (
+        <div className="cv-preview-overlay" onClick={() => setShowPasswordModal(false)}>
+          <div className="cv-preview-modal" 
+                style={{ maxWidth: '400px',
+                  width: '90%',
+                  height: 'auto',
+                  minHeight: 'unset',
+                  maxHeight: '90vh',
+                  overflowY: 'auto', }} 
+                onClick={(e) => e.stopPropagation()}>
+            <div className="cv-preview-header">
+              <span>Đổi Mật Khẩu</span>
+              <button className="cv-preview-close" onClick={() => setShowPasswordModal(false)}>✕</button>
+            </div>
+            {notify.msg && <div className={`notify-box nt-${notify.type}`} style={{ margin: '10px 20px 0' }}>{notify.msg}</div>}
+
+            <form onSubmit={handlePasswordChange} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                <label className="field-label" style={{ fontSize: '14px' }}>Mật khẩu hiện tại:</label>
+                <input
+                  type="password"
+                  className="field-input"
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                  value={passWordData.oldPassword}
+                  onChange={(e) => setPassWordData({ ...passWordData, oldPassword: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                <label className="field-label" style={{ fontSize: '14px' }}>Mật khẩu mới:</label>
+                <input
+                  type="password"
+                  className="field-input"
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                  value={passWordData.newPassword}
+                  onChange={(e) => setPassWordData({ ...passWordData, newPassword: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                <label className="field-label" style={{ fontSize: '14px' }}>Xác nhận mật khẩu mới:</label>
+                <input
+                  type="password"
+                  className="field-input"
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                  value={passWordData.confirmPassword}
+                  onChange={(e) => setPassWordData({ ...passWordData, confirmPassword: e.target.value })}
+                  required
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                className="mini-verify-btn" 
+                style={{ width: '100%', padding: '10px', marginTop: '10px', height: 'auto' }}
+                disabled={passWordLoading}
+              >
+                {passWordLoading ? '⏳ Đang xử lý...' : 'Cập nhật mật khẩu'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
-
-
   );
 }
 

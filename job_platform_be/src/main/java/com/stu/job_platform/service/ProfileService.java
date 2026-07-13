@@ -5,6 +5,7 @@ import com.stu.job_platform.entity.*;
 import com.stu.job_platform.repository.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
 import java.util.*;
@@ -12,6 +13,7 @@ import java.util.*;
 @Service
 public class ProfileService {
 
+    private final PasswordEncoder passwordEncoder;
     @Autowired private UserRepository userRepository;
     @Autowired private CandidateRepository candidateRepository;
     @Autowired private RecruiterRepository recruiterRepository;
@@ -116,6 +118,10 @@ public class ProfileService {
     //upload CV file for candidate
     private static final List<String> ALLOWED_CV_EXT = List.of(".pdf", ".doc", ".docx");
 
+    ProfileService(PasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
+    }
+
     public ProfileRequest uploadCv(Integer userId, org.springframework.web.multipart.MultipartFile file) throws java.io.IOException {
         Candidate can = candidateRepository.findById(userId).orElse(new Candidate());
         can.setId(userId);
@@ -215,5 +221,20 @@ public class ProfileService {
             
             return Map.of("status", "FAILED", "reason", aiMap.getOrDefault("reason", "Thông tin không khớp!"));
         }
+    }
+
+    public void changePassword(Integer userId, String oldPassword, String newPassword) throws Exception {
+        User user = userRepository.findById(userId).orElseThrow(()-> new Exception("User not found"));
+
+        if(!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new Exception("Mật khẩu không đúng");
+        }
+        if(passwordEncoder.matches(newPassword, user.getPassword())) {
+            throw new Exception("Mật khẩu mới không được trùng mật khẩu cũ");
+        }
+
+        String hasStringgNewPassword = passwordEncoder.encode(newPassword);
+        user.setPassword(hasStringgNewPassword);
+        userRepository.save(user);
     }
 }
