@@ -33,13 +33,14 @@ public class JobPostController {
     public ResponseEntity<ApiResponse<Page<JobPostResponse>>> searchJobs(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer categoryId,
+            @RequestParam(required = false) Integer industryId,
             @RequestParam(required = false) String location,
             @RequestParam(required = false) String jobType,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<JobPostResponse> result = jobPostService.searchJobs(keyword, categoryId, location, jobType, pageable);
+        Page<JobPostResponse> result = jobPostService.searchJobs(keyword, categoryId, industryId, location, jobType, pageable);
         return ResponseEntity.ok(ApiResponse.success("Tìm kiếm thành công!", result));
     }
 
@@ -49,6 +50,13 @@ public class JobPostController {
     @GetMapping("/featured")
     public ResponseEntity<ApiResponse<List<JobPostResponse>>> getFeaturedJobs() {
         return ResponseEntity.ok(ApiResponse.success(jobPostService.getFeaturedJobs()));
+    }
+    /**
+     * Thống kê công khai (Trang chủ)
+     */
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Long>>> getPublicStats() {
+        return ResponseEntity.ok(ApiResponse.success(jobPostService.getPublicStats()));
     }
 
     /**

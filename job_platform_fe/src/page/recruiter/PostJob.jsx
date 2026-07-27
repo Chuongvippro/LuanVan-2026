@@ -20,6 +20,11 @@ function PostJob() {
     benefits: ''
   });
 
+
+  const LOCATIONS = ['Hà Nội', 'Hồ Chí Minh', 'Đà Nẵng', 'Cần Thơ', 'Khác'];
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+
   const token = localStorage.getItem('accessToken');
   const user = token ? decodeToken(token) : null;
 
@@ -50,8 +55,10 @@ function PostJob() {
     setLoading(true);
     setMessage({ type: '', text: '' });
 
+    const location = `${address.trim()} (${city})`.trim();
+    const payload = { ...formData, location };    
     try {
-      const res = await api.post('/jobs', formData);
+      const res = await api.post('/jobs', payload);
       if (res.data.success) {
         setMessage({ type: 'success', text: '🎉 Đăng bài thành công!' });
         setTimeout(() => navigate('/my-posts'), 2000);
@@ -120,8 +127,29 @@ function PostJob() {
         </div>
 
         <div className="post-job-full">
-          <label className="form-label">Địa điểm làm việc</label>
-          <input className="form-input-premium" name="location" value={formData.location} onChange={handleChange} placeholder="Địa chỉ cụ thể văn phòng..." />
+          <label className="form-label">Địa điểm làm việc <span style={{ color: 'red' }}>*</span></label>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <input
+              className="form-input-premium"
+              style={{ flex: 2 }}
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Địa chỉ cụ thể (số nhà, đường, quận...)"
+              required
+            />
+            <select
+              className="form-input-premium"
+              style={{ flex: 1 }}
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              required
+            >
+              <option value="">-- Thành phố --</option>
+              {LOCATIONS.map(loc => (
+                <option key={loc} value={loc}>{loc}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="post-job-full">

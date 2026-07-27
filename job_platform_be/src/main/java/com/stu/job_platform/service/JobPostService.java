@@ -191,9 +191,9 @@ public class JobPostService {
     /**
      * Tìm kiếm nâng cao
      */
-    public Page<JobPostResponse> searchJobs(String keyword, Integer categoryId,
+    public Page<JobPostResponse> searchJobs(String keyword, Integer categoryId, Integer industryId,
                                              String location, String jobType, Pageable pageable) {
-        return jobPostRepository.searchJobs(keyword, categoryId, location, jobType, pageable)
+        return jobPostRepository.searchJobs(keyword, categoryId, industryId, location, jobType, pageable)
                 .map(this::toResponse);
     }
 
@@ -239,6 +239,8 @@ public class JobPostService {
         dto.setTitle(jobPost.getTitle());
         dto.setSalary(jobPost.getSalary());
         dto.setLocation(jobPost.getLocation());
+        dto.setLocationCity(extractCity(jobPost.getLocation()));
+        dto.setLocationAddress(extractAddress(jobPost.getLocation())); // thêm dòng này
         dto.setJobType(jobPost.getJobType());
         dto.setExperienceLevel(jobPost.getExperienceLevel());
         dto.setJdText(jobPost.getJdText());
@@ -266,5 +268,42 @@ public class JobPostService {
         dto.setApplicationCount(applicationRepository.countByJobPostId(jobPost.getId()));
 
         return dto;
+    }
+
+    private String extractCity(String location){
+        if(location== null||location.isBlank())return null;
+        int start = location.lastIndexOf('(');
+        int end = location.lastIndexOf(')');
+        if(start>=0&&end>start){
+            return location.substring(start+1, end).trim();
+        }
+        return location;
+    }
+
+    private String extractAddress(String location) {
+        if (location == null || location.isBlank()) return null;
+        int start = location.lastIndexOf('(');
+        if (start > 0) {
+            return location.substring(0, start).trim();
+        }
+        return location; // fallback cho dữ liệu chưa chuẩn hóa
+    }
+
+
+    /**
+     * Lấy danh sách các loại hình công việc (job type) đang tồn tại thực tế
+     */
+    public List<String> getAllJobTypes() {
+        return jobPostRepository.findDistinctJobTypes();
+    }
+    /**
+     * Thống kê công khai cho trang chủ (tổng job, công ty, lượt ứng tuyển)
+     */
+    public java.util.Map<String, Long> getPublicStats() {
+        java.util.Map<String, Long> stats = new java.util.HashMap<>();
+        stats.put("totalJobs", jobPostRepository.countByStatus(1));
+        stats.put("totalCompanies", jobPostRepository.countDistinctActiveRecruiters());
+        stats.put("totalApplications", applicationRepository.count()); // count() có sẵn từ JpaRepository
+        return stats;
     }
 }

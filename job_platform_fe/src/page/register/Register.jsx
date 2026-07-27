@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../service/api';
 import './Register.css';
@@ -29,6 +29,8 @@ function Register() {
   const [companyOtpVerified, setCompanyOtpVerified] = useState(false);
   const [companyOtpLoading, setCompanyOtpLoading] = useState(false);
   const [companyOtpMessage, setCompanyOtpMessage] = useState('');
+  const [companyOtpCooldown, setCompanyOtpCooldown] = useState(0); 
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const handleCompanyEmailChange = (value) => {
     setFormData({ ...formData, companyEmail: value });
@@ -38,6 +40,21 @@ function Register() {
     setCompanyOtp('');
     setCompanyOtpMessage('');
   };
+
+  useEffect(() => {
+    if (companyOtpCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setCompanyOtpCooldown((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [companyOtpCooldown]);
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   const handleSendCompanyOtp = async () => {
     if (!formData.companyEmail) {
@@ -53,6 +70,7 @@ function Register() {
       const message = typeof res.data === 'string' ? res.data : res.data?.message;
       setCompanyOtpMessage(message);
       setCompanyOtpSent(true);
+      setCompanyOtpCooldown(30); // Bắt đầu đếm ngược 30 giây
     } catch (err) {
       setCompanyOtpMessage(err.response?.data?.message || err.response?.data || 'Không gửi được OTP');
     } finally {
@@ -123,6 +141,7 @@ function Register() {
       if (res.status === 200 && message?.toLowerCase().includes('otp')) {
         setSuccess(message);
         setStep('otp'); // Chuyển sang bước nhập OTP, không redirect ngay
+        setResendCooldown(30); // Bắt đầu đếm ngược 30 giây cho nút gửi lại OTP
       } else {
         setError(message || 'Registration failed');
       }
@@ -186,6 +205,7 @@ function Register() {
       const res = await api.post('/auth/register', payload);
       const message = typeof res.data === 'string' ? res.data : res.data?.message;
       setSuccess(message || 'Đã gửi lại mã OTP');
+      setResendCooldown(30); // Bắt đầu đếm ngược 30 giây cho nút gửi lại OTP
     } catch (err) {
       setError(err.response?.data?.message || 'Không gửi lại được OTP');
     } finally {
@@ -320,10 +340,14 @@ function Register() {
                         type="button"
                         className="btn btn-outline-primary otp-action-btn"
                         onClick={handleSendCompanyOtp}
-                        disabled={companyOtpLoading || companyOtpVerified || !formData.companyEmail}
+                        //Thêm || companyOtpCooldown > 0 để khóa nút khi đang đếm lùi
+                        disabled={companyOtpLoading || companyOtpVerified || !formData.companyEmail || companyOtpCooldown > 0} 
                       >
                         {companyOtpVerified
                           ? '✓ Đã xác thực'
+                          // Hiển thị đếm lùi số giây
+                          : companyOtpCooldown > 0
+                          ? `Gửi lại (${companyOtpCooldown}s)`
                           : companyOtpLoading && !companyOtpSent
                           ? 'Đang gửi...'
                           : companyOtpSent
@@ -401,9 +425,13 @@ function Register() {
                   type="button"
                   className="resend-btn"
                   onClick={handleResendOtp}
-                  disabled={loading}
+                  // Khóa nút khi đang cooldown
+                  disabled={loading || resendCooldown > 0} 
                 >
-                  Không nhận được mã? Gửi lại
+                  {/*Đổi text sang dạng đếm lùi */}
+                  {resendCooldown > 0
+                    ? `Không nhận được mã? Gửi lại (${resendCooldown}s)`
+                    : 'Không nhận được mã? Gửi lại'}
                 </button>
                 <button
                   type="button"

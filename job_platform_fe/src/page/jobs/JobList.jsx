@@ -6,6 +6,9 @@ import JobCard from '../../components/JobCard';
 function JobList() {
   const [jobs, setJobs] = useState([]);
   const [categories, setCategories] = useState([]);
+  //state của danh sách ngành lớn
+  const [industries, setIndustries] = useState([]);
+  const [jobTypes, setJobTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -14,25 +17,35 @@ function JobList() {
   // Filter states
   const [keyword, setKeyword] = useState(searchParams.get('keyword') || '');
   const [categoryId, setCategoryId] = useState(searchParams.get('categoryId') || '');
+  const [industryId, setIndustryId] = useState(searchParams.get('industryId') || ''); // Ngành lớn
   const [location, setLocation] = useState(searchParams.get('location') || '');
   const [jobType, setJobType] = useState(searchParams.get('jobType') || '');
   const [page, setPage] = useState(0);
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  useEffect(() => {
-    fetchJobs();
-  }, [page, keyword, categoryId, location, jobType]);
+    const fetchIndustries= async()=>{
+    try{
+      const res = await api.get('/industries');
+      if(res.data.success) setIndustries(res.data.data||[]);
+    }catch(err){
+      console.error(err);
+    }
+  }
 
   const fetchCategories = async () => {
     try {
       const res = await api.get('/categories');
-      if (res.data.code === 200) setCategories(res.data.data || []);
+      if (res.data.success) setCategories(res.data.data || []);
     } catch (err) {
       console.error(err);
     }
+  };
+  const fetchJobTypes = async () => {
+    try {
+      const res = await api.get('/job-types');
+      if (res.data.success) setJobTypes(res.data.data || []);
+    } catch (err) {
+      console.error(err);
+    } 
   };
 
   const fetchJobs = async () => {
@@ -40,6 +53,7 @@ function JobList() {
     try {
       const params = new URLSearchParams();
       if (keyword) params.append('keyword', keyword);
+      if (industryId) params.append('industryId', industryId);
       if (categoryId) params.append('categoryId', categoryId);
       if (location) params.append('location', location);
       if (jobType) params.append('jobType', jobType);
@@ -57,6 +71,17 @@ function JobList() {
       setLoading(false);
     }
   };
+  useEffect(() => {
+    fetchCategories();
+    fetchIndustries();
+    fetchJobTypes();
+  }, []);
+
+  useEffect(() => {
+    fetchJobs();
+  }, [page, keyword, categoryId,industryId, location, jobType]);
+
+
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -67,6 +92,7 @@ function JobList() {
   const clearFilters = () => {
     setKeyword('');
     setCategoryId('');
+    setIndustryId('');
     setLocation('');
     setJobType('');
     setPage(0);
@@ -94,13 +120,39 @@ function JobList() {
               />
             </div>
 
+            {/* NGÀNH LỚN */}
             <div className="form-group">
-              <label>Danh mục</label>
-              <select className="form-control" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-                <option value="">Tất cả danh mục</option>
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+              <label>Ngành nghề chính</label>
+              <select 
+                className="form-control" 
+                value={industryId} 
+                onChange={(e) => {
+                  setIndustryId(e.target.value);
+                  setCategoryId(''); // Reset ngành nhỏ mỗi khi đổi ngành lớn
+                }}
+              >
+                <option value="">Tất cả ngành nghề</option>
+                {industries.map(ind => (
+                  <option key={ind.id} value={ind.id}>{ind.name}</option>
                 ))}
+              </select>
+            </div>
+
+            {/* NGÀNH NHỎ */}
+            <div className="form-group">
+              <label>Chuyên môn / Ngành nhỏ</label>
+              <select 
+                className="form-control" 
+                value={categoryId} 
+                onChange={(e) => setCategoryId(e.target.value)}
+              >
+                <option value="">-- Chọn phân ngành --</option>
+                {/* Dùng Number(cat.industry.id) === Number(industryId) cho chuẩn đét */}
+                {industryId && categories
+                  .filter(cat => cat.industry && Number(cat.industry.id) === Number(industryId))
+                  .map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
               </select>
             </div>
 
@@ -110,9 +162,9 @@ function JobList() {
                 <option value="">Tất cả</option>
                 <option value="Hà Nội">Hà Nội</option>
                 <option value="Hồ Chí Minh">Hồ Chí Minh</option>
-                <option value="TP.HCM">TP.HCM</option>
                 <option value="Đà Nẵng">Đà Nẵng</option>
-                <option value="Remote">Remote</option>
+                <option value="Cần Thơ">Cần Thơ</option>
+                <option value="Khác">Khác</option>
               </select>
             </div>
 
@@ -120,10 +172,9 @@ function JobList() {
               <label>Hình thức</label>
               <select className="form-control" value={jobType} onChange={(e) => setJobType(e.target.value)}>
                 <option value="">Tất cả</option>
-                <option value="full-time">Full-time</option>
-                <option value="part-time">Part-time</option>
-                <option value="remote">Remote</option>
-                <option value="internship">Thực tập</option>
+                {jobTypes.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
               </select>
             </div>
 

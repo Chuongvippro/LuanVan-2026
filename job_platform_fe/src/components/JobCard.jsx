@@ -34,7 +34,7 @@ function JobCard({ job }) {
              {job.salary || 'Thỏa thuận'}
           </span>
           <span className="text-muted" style={{ fontSize: '14px' }}>
-            📍 {job.location || 'Chưa cập nhật'}
+            📍 {job.locationAddress || job.location || 'Chưa cập nhật'}
           </span>
           <span className="text-muted" style={{ fontSize: '14px' }}>
             💼 {job.jobType === 'full-time' ? 'Toàn thời gian' : job.jobType}

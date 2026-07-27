@@ -2,6 +2,7 @@ package com.stu.job_platform.controller;
 
 import com.stu.job_platform.dto.LoginRequest;
 import com.stu.job_platform.dto.LoginResponse;
+import com.stu.job_platform.dto.RefreshTokenRequest;
 import com.stu.job_platform.entity.RefreshToken;
 import com.stu.job_platform.entity.User;
 import com.stu.job_platform.repository.UserRepository;
@@ -12,6 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -50,8 +54,8 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refresh(@RequestBody Map<String, String> request) {
-        String requestRefreshToken = request.get("token");
+    public ResponseEntity<?> refresh(@RequestBody RefreshTokenRequest request) {
+        String requestRefreshToken = request.getToken();
 
         // Tìm cục token dưới DB, kiểm tra hết hạn 5 ngày chưa, nếu ổn thì cấp Access Token mới
         return refreshTokenService.findByToken(requestRefreshToken)
@@ -63,4 +67,19 @@ public class AuthController {
                 })
                 .orElseThrow(() -> new RuntimeException("Refresh Token không hợp lệ dưới DB!"));
     }
+
+
+    // Xóa cục token thô dưới DB khi người dùng bấm nút Logout
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@RequestBody RefreshTokenRequest request) {
+        String requestRefreshToken = request.getToken();
+
+        // Xóa cục token thô dưới DB
+        if(requestRefreshToken != null && !requestRefreshToken.isEmpty()) {
+            refreshTokenService.deleteByToken(requestRefreshToken);
+        }
+
+        return ResponseEntity.ok(com.stu.job_platform.dto.ApiResponse.success("Đăng xuất thành công!"));
+    }
+    
 }

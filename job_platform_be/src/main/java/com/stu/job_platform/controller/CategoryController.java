@@ -5,6 +5,7 @@ import com.stu.job_platform.entity.Industry;
 import com.stu.job_platform.entity.JobCategory;
 import com.stu.job_platform.repository.IndustryRepository;
 import com.stu.job_platform.repository.JobCategoryRepository;
+import com.stu.job_platform.service.JobPostService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,10 +19,15 @@ import java.util.List;
 @RequestMapping("/api/v1")
 public class CategoryController {
 
+    private final JobPostService jobPostService;
     @Autowired
     private IndustryRepository industryRepository;
     @Autowired
     private JobCategoryRepository jobCategoryRepository;
+
+    CategoryController(JobPostService jobPostService) {
+        this.jobPostService = jobPostService;
+    }
 
     /**
      * Lấy tất cả ngành nghề
@@ -45,5 +51,11 @@ public class CategoryController {
     @GetMapping("/categories/industry/{industryId}")
     public ResponseEntity<ApiResponse<List<JobCategory>>> getCategoriesByIndustry(@PathVariable Integer industryId) {
         return ResponseEntity.ok(ApiResponse.success(jobCategoryRepository.findByIndustryId(industryId)));
+    }
+
+    
+    @GetMapping("/job-types")
+    public ResponseEntity<ApiResponse<List<String>>> getAllJobTypes() {
+        return ResponseEntity.ok(ApiResponse.success(jobPostService.getAllJobTypes()));
     }
 }

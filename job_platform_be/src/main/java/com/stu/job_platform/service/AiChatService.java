@@ -254,9 +254,14 @@ public class AiChatService {
             === DANH SÁCH BÀI TUYỂN DỤNG ===
             %s
 
-            YÊU CẦU:
-            Chọn ra các mã bài đăng (jobCode) phù hợp nhất với CV này (tối đa 5 mã, chỉ chọn nếu thực sự phù hợp về kỹ năng/kinh nghiệm).
-            Nếu không có bài nào phù hợp, trả về mảng rỗng.
+            YÊU CẦU ĐÁNH GIÁ NGHIÊM NGẶT:
+            Với mỗi bài tuyển dụng, hãy tính toán %% độ phù hợp dựa trên các tiêu chí sau:
+            1. Định hướng & Kỹ năng cốt lõi (Core Stack): Dựa vào thời gian làm việc, dự án thực tế và chức danh.
+            2. Cảnh báo Keyword lướt qua: Nếu một công nghệ (ví dụ: React, Vue, Python...) chỉ xuất hiện 1-2 dòng ngắn, nằm ở mục sở thích/kỹ năng phụ và KHÔNG có dự án/kinh nghiệm thực tế đi kèm -> KHÔNG ĐƯỢC tính công nghệ đó vào điểm phù hợp chính.
+            3. Trường hợp lệch định hướng: Nếu CV chủ yếu làm Backend (Spring Boot, Java...) nhưng bài đăng tuyển Frontend (React, Angular...), tuyệt đối KHÔNG tính điểm cao dù CV có nhắc nhẹ đến Frontend.
+
+            Chỉ chọn các mã bài đăng (jobCode) có độ phù hợp ước tính TRÊN 50%% (tối đa 5 mã).
+            Nếu không có bài nào đạt trên 50%%, trả về mảng rỗng.
 
             CHỈ trả về JSON thuần, không giải thích, đúng định dạng:
             ["JP-XXXXXX", "JP-YYYYYY"]

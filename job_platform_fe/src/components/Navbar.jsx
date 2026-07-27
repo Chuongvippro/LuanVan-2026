@@ -17,12 +17,21 @@ function Navbar() {
     return () => window.removeEventListener('auth-changed', initUser);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const refreshToken = localStorage.getItem('refreshToken');
+    try{
+      if(refreshToken){
+        await api.post('/auth/logout', { refreshToken });
+      }
+    }catch (error) {
+      console.error('Error during logout:', error);
+    }finally {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     window.dispatchEvent(new Event('auth-changed'));
     setUser(null); // Xóa state user để Navbar chuyển về trạng thái Chưa đăng nhập ngay lập tức
     navigate('/login');
+    }
   };
 
   return (

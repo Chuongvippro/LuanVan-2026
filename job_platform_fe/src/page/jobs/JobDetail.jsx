@@ -111,7 +111,7 @@ function JobDetail() {
 
         <div className="job-tags-container">
           {job.salary && <div className="job-tag">💰 <strong style={{ color: '#ed1b2f' }}>{job.salary}</strong></div>}
-          {job.location && <div className="job-tag">📍 {job.location}</div>}
+          {job.locationAddress  && <div className="job-tag">📍 {job.locationAddress ||job.location || 'Chưa cập nhật'}</div>}
           {job.jobType && <div className="job-tag">⏳ {job.jobType}</div>}
           {job.experienceLevel && <div className="job-tag">📊 Kinh nghiệm: {job.experienceLevel}</div>}
           {job.categoryName && <div className="job-tag">📋 {job.categoryName}</div>}

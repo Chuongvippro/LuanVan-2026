@@ -10,6 +10,8 @@ public class JobPostResponse {
     private String title;
     private String salary;
     private String location;
+    private String locationCity; // Thành phố đã tách ra, dùng để hiển thị/filter nhanh
+    private String locationAddress; // Phần địa chỉ, đã bỏ tên thành phố trong ngoặc
     private String jobType;
     private String experienceLevel;
     private String jdText;
@@ -42,6 +44,10 @@ public class JobPostResponse {
     public void setSalary(String salary) { this.salary = salary; }
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
+    public String getLocationCity() { return locationCity; }
+    public void setLocationCity(String locationCity) { this.locationCity = locationCity; }
+    public String getLocationAddress() { return locationAddress; }
+    public void setLocationAddress(String locationAddress) { this.locationAddress = locationAddress; }
     public String getJobType() { return jobType; }
     public void setJobType(String jobType) { this.jobType = jobType; }
     public String getExperienceLevel() { return experienceLevel; }

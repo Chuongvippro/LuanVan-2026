@@ -10,6 +10,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;;
+
 @Repository
 public interface RecruiterRepository extends JpaRepository<Recruiter, Integer> {
+    List<Recruiter> findByPointAndStatusTrust(Integer point, String statusTrust);
 }
