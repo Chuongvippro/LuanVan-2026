@@ -4,7 +4,7 @@ import com.stu.job_platform.entity.AiConversation;
 import com.stu.job_platform.entity.User;
 import com.stu.job_platform.repository.AiConversationRepository;
 import com.stu.job_platform.repository.UserRepository;
-import io.github.cdimascio.dotenv.Dotenv;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
 @Service
 public class AiChatService {
 
-    private final String apiKey;
 
     @Autowired
     private JobPostRepository jobPostRepository;
@@ -50,22 +49,13 @@ public class AiChatService {
     @Autowired 
     private UserRepository userRepository;
 
+    @Autowired
+    private GroqKeyManager groqKeyManager;
+
 
     @Value("${file.upload-dir}")
     private String uploadDir;
 
-
-    public AiChatService() {
-        Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
-        String key = dotenv.get("GROQ_API_KEY");
-        if (key == null) key = dotenv.get("GEMINI_API_KEY");
-        if (key == null) {
-            dotenv = Dotenv.configure().directory("./job_platform").ignoreIfMissing().load();
-            key = dotenv.get("GROQ_API_KEY");
-            if (key == null) key = dotenv.get("GEMINI_API_KEY");
-        }
-        this.apiKey = key;
-    }
 
     // ── Endpoint 1: Upload file mới ──
     public String evaluateWithFile(MultipartFile cvFile, String jobCode) throws IOException {
@@ -145,34 +135,10 @@ public class AiChatService {
                 job.getRequirements(),
                 cvText
             );
-        RestTemplate restTemplate = new RestTemplate();
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", "Bearer " + apiKey);
-
-        Map<String, Object> requestBody = Map.of(
-                "model", "llama-3.3-70b-versatile",
-                "messages", List.of(
-                        Map.of("role", "system", "content", "Bạn là chuyên gia tuyển dụng, trả lời bằng tiếng Việt, rõ ràng và chuyên nghiệp."),
-                        Map.of("role", "user", "content", prompt)
-                ),
-                "temperature", 0.3,
-                "max_tokens", 1024
+        return callGroq(
+            "Bạn là chuyên gia tuyển dụng, trả lời bằng tiếng Việt, rõ ràng và chuyên nghiệp.",
+            prompt, 0.3, 1024
         );
-
-        try {
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-            ResponseEntity<Map> response = restTemplate.postForEntity(
-                    "https://api.groq.com/openai/v1/chat/completions", entity, Map.class);
-
-            List<?> choices = (List<?>) response.getBody().get("choices");
-            Map<?, ?> message = (Map<?, ?>) ((Map<?, ?>) choices.get(0)).get("message");
-            return message.get("content").toString().trim();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Lỗi khi gọi AI. Vui lòng thử lại!");
-        }
     }
 
     // ── Extract text ──
@@ -267,34 +233,12 @@ public class AiChatService {
             ["JP-XXXXXX", "JP-YYYYYY"]
             """.formatted(cvText, jobListText.toString());
 
-        RestTemplate restTemplate = new RestTemplate();
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", "Bearer " + apiKey);
-
-        Map<String, Object> requestBody = Map.of(
-                "model", "llama-3.3-70b-versatile",
-                "messages", List.of(
-                        Map.of("role", "system", "content", "Bạn chỉ trả về JSON thuần, không thêm bất kỳ text giải thích nào."),
-                        Map.of("role", "user", "content", prompt)
-                ),
-                "temperature", 0.2,
-                "max_tokens", 512
-        );
-
         try {
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-            ResponseEntity<Map> response = restTemplate.postForEntity(
-                    "https://api.groq.com/openai/v1/chat/completions", entity, Map.class);
-
-            List<?> choices = (List<?>) response.getBody().get("choices");
-            Map<?, ?> message = (Map<?, ?>) ((Map<?, ?>) choices.get(0)).get("message");
-            String content = message.get("content").toString().trim();
-
-            // Đôi khi AI trả kèm ```json ... ``` nên cần lọc ra
-            content = content.replaceAll("```json", "").replaceAll("```", "").trim();
-            return content;
-
+            String content = callGroq(
+                "Bạn chỉ trả về JSON thuần, không thêm bất kỳ text giải thích nào.",
+                prompt, 0.2, 512
+            );
+            return content.replaceAll("```json", "").replaceAll("```", "").trim();
         } catch (Exception e) {
             e.printStackTrace();
             return "[]";
@@ -418,10 +362,16 @@ public class AiChatService {
 
     // ── HELPER dùng chung ─────────────────────────────────────────────────────
     private String callGroq(String systemPrompt, String userPrompt, double temperature, int maxTokens) {
+        return callGroq(systemPrompt, userPrompt, temperature, maxTokens, 0);
+    }
+
+    private String callGroq(String systemPrompt, String userPrompt, double temperature, int maxTokens, int attempt) {
+        GroqKeyManager.KeyState key = groqKeyManager.pickKey();
+
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", "Bearer " + apiKey);
+        headers.set("Authorization", "Bearer " + key.apiKey);
 
         Map<String, Object> body = Map.of(
             "model", "llama-3.3-70b-versatile",
@@ -437,9 +387,26 @@ public class AiChatService {
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
             ResponseEntity<Map> response = restTemplate.postForEntity(
                 "https://api.groq.com/openai/v1/chat/completions", entity, Map.class);
+
+            groqKeyManager.recordSuccess(key, response.getHeaders());
+
             List<?> choices = (List<?>) response.getBody().get("choices");
             Map<?, ?> message = (Map<?, ?>) ((Map<?, ?>) choices.get(0)).get("message");
             return message.get("content").toString().trim();
+
+        } catch (HttpClientErrorException e) {
+            groqKeyManager.recordRateLimited(key, e.getResponseHeaders());
+            if (attempt < 3) {
+                return callGroq(systemPrompt, userPrompt, temperature, maxTokens, attempt + 1);
+            }
+            throw new RuntimeException("Tất cả API key đều đang hết quota, vui lòng thử lại sau!");
+        } catch (org.springframework.web.client.HttpServerErrorException e) {
+            System.out.println("⚠️ [AiChatService] Groq Server bị lỗi " + e.getStatusCode() + "! Thử xoay Key khác...");
+            groqKeyManager.recordRateLimited(key, e.getResponseHeaders());
+            if (attempt < 3) {
+                return callGroq(systemPrompt, userPrompt, temperature, maxTokens, attempt + 1);
+            }
+            throw new RuntimeException("Server lỗi, vui lòng thử lại sau!");
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Lỗi kết nối AI. Vui lòng thử lại!");

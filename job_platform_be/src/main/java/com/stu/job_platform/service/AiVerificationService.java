@@ -1,6 +1,6 @@
 package com.stu.job_platform.service;
 
-import io.github.cdimascio.dotenv.Dotenv;
+import org.springframework.web.client.HttpClientErrorException;
 import jakarta.persistence.criteria.CriteriaBuilder.In;
 
 import org.jsoup.Jsoup;
@@ -18,7 +18,6 @@ import java.util.*;
 @Service
 public class AiVerificationService {
     
-    private final String apiKey;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -26,18 +25,8 @@ public class AiVerificationService {
     @Autowired
     private RecruiterRepository recruiterRepository;
 
-    public AiVerificationService() {
-        Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
-        String key = dotenv.get("GROQ_API_KEY");
-        if (key == null) key = dotenv.get("GEMINI_API_KEY");
-
-        if (key == null) {
-            dotenv = Dotenv.configure().directory("./job_platform").ignoreIfMissing().load();
-            key = dotenv.get("GROQ_API_KEY");
-            if (key == null) key = dotenv.get("GEMINI_API_KEY");
-        }
-        this.apiKey = key;
-    }
+    @Autowired
+    private GroqKeyManager groqKeyManager;
 
     public String scrapeWebsiteText(String url, Integer userId) {
         try {
@@ -202,10 +191,16 @@ public class AiVerificationService {
             return "{\"match_percentage\":0,\"reason\":\"Invalid fieldType\"}";
         }
 
+        // Gọi API Groq
+        return callGroqWithFailover(apiUrl, prompt, 0);
+    }
+    private String callGroqWithFailover(String apiUrl, String prompt, int attempt) {
+        GroqKeyManager.KeyState key = groqKeyManager.pickKey();
+
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", "Bearer " + apiKey);
+        headers.set("Authorization", "Bearer " + key.apiKey);
 
         Map<String, Object> requestBody = Map.of(
             "model", "llama-3.3-70b-versatile", 
@@ -216,11 +211,23 @@ public class AiVerificationService {
         try {
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
             ResponseEntity<Map> response = restTemplate.postForEntity(apiUrl, entity, Map.class);
+
+            groqKeyManager.recordSuccess(key, response.getHeaders());
+
             Map<String, Object> responseBody = (Map<String, Object>) response.getBody();
             List<?> choices = (List<?>) responseBody.get("choices");
             Map<?, ?> firstChoice = (Map<?, ?>) choices.get(0);
             Map<?, ?> message = (Map<?, ?>) firstChoice.get("message");
             return message.get("content").toString().trim();
+
+        } catch (HttpClientErrorException e) {
+            groqKeyManager.recordRateLimited(key, e.getResponseHeaders());
+
+            if (attempt < 3) {
+                return callGroqWithFailover(apiUrl, prompt, attempt + 1);
+            }
+            return "{\"match_percentage\": 0, \"reason\": \"Tất cả API key đều đang hết quota, vui lòng thử lại sau!\"}";
+
         } catch (Exception e) {
             e.printStackTrace();
             return "{\"match_percentage\": 0, \"reason\": \"Lỗi kết nối API AI!\"}";
