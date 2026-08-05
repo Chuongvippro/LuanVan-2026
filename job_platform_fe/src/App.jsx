@@ -13,6 +13,7 @@ import JobDetail from './page/jobs/JobDetail';
 import CompanyList from './page/companies/CompanyList';
 import CompanyDetail from './page/companies/CompanyDetail';
 import Profile from './page/proifle/Profile';
+import Settings from './page/settings/Settings';
 
 // Candidate
 import CvManager from './page/candidate/CvManager';
@@ -47,6 +48,7 @@ function App() {
           
           {/* Shared Authenticated Routes */}
           <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/bug-report" element={<BugReport />} />
 
           {/* Candidate Routes */}

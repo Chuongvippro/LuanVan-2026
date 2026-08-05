@@ -94,13 +94,19 @@ function CompanyDetail() {
                 Trạng thái xác thực
               </h3>
               <div className="d-flex align-items-center gap-2 mb-3">
-                <span style={{ fontSize: '24px' }}>🛡️</span>
-                <span style={{ fontWeight: '600', color: company.statusTrust?.includes('name') || company.statusTrust?.includes('tax') ? '#00b14f' : '#666' }}>
-                  {company.statusTrust?.includes('name') || company.statusTrust?.includes('tax') ? 'Đã xác thực' : 'Chưa xác thực đầy đủ'}
+                <span style={{ fontSize: '24px' }}>
+                  {company.statusTrust === 'verified' ? '🛡️' : '⚠️'}
+                </span>
+                <span style={{ fontWeight: '600', color: (company.statusTrust === 'verified' || company.statusTrust?.includes('name') || company.statusTrust?.includes('tax')) ? '#00b14f' : '#666' }}>
+                  {company.statusTrust === 'verified' 
+                    ? 'Đã xác thực mức tối đa' 
+                    : (company.statusTrust?.includes('name') || company.statusTrust?.includes('tax')) 
+                      ? 'Đã xác thực một phần' 
+                      : 'Chưa xác thực đầy đủ'}
                 </span>
               </div>
               <p style={{ fontSize: '14px', color: '#555', marginBottom: 0 }}>
-                Điểm tín nhiệm: <strong>{company.point || 60} / 100</strong>
+                Điểm tín nhiệm: <strong style={{ color: company.point === 100 ? '#00b14f' : 'inherit' }}>{company.point || 60} / 100</strong>
               </p>
             </div>
             

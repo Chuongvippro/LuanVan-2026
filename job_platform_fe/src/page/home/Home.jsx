@@ -108,10 +108,10 @@ function Home() {
     <div>
       {/* HERO SECTION ITVIEC STYLE */}
       <section className="hero" style={{
-        backgroundImage: `linear-gradient(rgba(18, 18, 18, 0.7), rgba(18, 18, 18, 0.8)), url('/images/hero_bg.png')`,
+        backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.9)), url('/images/hero_bg.png')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        padding: '80px 0 60px',
+        padding: '80px 0 100px', /* Increased bottom padding for floating bar */
         position: 'relative'
       }}>
         <div className="container" style={{ position: 'relative', zIndex: 2 }}>
@@ -154,12 +154,12 @@ function Home() {
             <span style={{ color: '#fff', fontSize: '14px', marginRight: '5px' }}>Gợi ý cho bạn:</span>
             {['Java', 'ReactJS', '.NET', 'Tester', 'PHP', 'Business Analysis', 'NodeJS', 'Team Management'].map(tag => (
               <span key={tag} onClick={() => setKeyword(tag)} style={{
-                border: '1px solid #4a4a4a', color: '#fff', padding: '6px 16px',
+                border: '1px solid rgba(255,255,255,0.3)', color: '#fff', padding: '6px 16px',
                 borderRadius: '20px', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s',
-                backgroundColor: 'transparent'
+                backgroundColor: 'rgba(255,255,255,0.1)'
               }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#fff'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#4a4a4a'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.borderColor = '#fff'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; }}
               >
                 {tag}
               </span>
@@ -167,10 +167,10 @@ function Home() {
           </div>
 
           {/* Thanh chữ chạy (Marquee) */}
-          <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)', padding: '10px 0', borderTop: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.05)', margin: '0 -15px', paddingLeft: '15px', paddingRight: '15px' }}>
-            <span style={{ fontSize: '20px', marginRight: '16px' }}>📢</span>
+          <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)', padding: '10px 0', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <span style={{ fontSize: '20px', marginRight: '16px', marginLeft: '16px' }}>📢</span>
             <div className="marquee-wrapper">
-              <Link to="/jobs" className="marquee-content" style={{ color: '#b3b3b3', textDecoration: 'none', fontSize: '20px', fontWeight: '600', letterSpacing: '0.5px' }}>
+              <Link to="/jobs" className="marquee-content" style={{ color: '#cbd5e1', textDecoration: 'none', fontSize: '16px', fontWeight: '500' }}>
                 <span style={{ marginRight: '50px' }}><span style={{ color: '#fff', fontWeight: 'bold' }}>CÔNG VIỆC INTERNSHIP</span> đã có mặt trên JobPlatform | Bắt đầu sự nghiệp IT ngay với các cơ hội thực tập</span>
                 <span style={{ marginRight: '50px' }}><span style={{ color: '#fff', fontWeight: 'bold' }}>CÔNG VIỆC INTERNSHIP</span> đã có mặt trên JobPlatform | Bắt đầu sự nghiệp IT ngay với các cơ hội thực tập</span>
                 <span style={{ marginRight: '50px' }}><span style={{ color: '#fff', fontWeight: 'bold' }}>CÔNG VIỆC INTERNSHIP</span> đã có mặt trên JobPlatform | Bắt đầu sự nghiệp IT ngay với các cơ hội thực tập</span>
@@ -181,49 +181,86 @@ function Home() {
         </div>
       </section>
 
-      {/* QUICK LINKS SECTION */}
+      {/* QUICK LINKS SECTION (FLOATING) */}
       <section style={{
-        backgroundColor: '#fafafa',
-        borderBottom: '1px solid #e5e5e5',
-        boxShadow: '0 -2px 8px rgba(0,0,0,0.15)',
         position: 'relative',
-        zIndex: 3
+        zIndex: 10,
+        marginTop: '-40px', /* Pulls the section up to overlap the hero */
+        marginBottom: '40px'
       }}>
         <div className="container">
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '20px 0' }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: '16px',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.08)',
+            padding: '24px 32px',
+            border: '1px solid rgba(255, 255, 255, 0.5)'
+          }}>
             {[
-              { to: '/jobs', icon: '💼', label: 'Tìm việc thụ động', badge: { text: 'HOT', color: '#ff9100' } },
+              { to: '/jobs', icon: '💼', label: 'Tìm việc thụ động', badge: { text: 'HOT', color: '#f59e0b', bg: '#fef3c7' } },
               { to: '/jobs', icon: '📄', label: 'Mẫu CV chuẩn IT' },
-              { to: '/jobs', icon: '🏆', label: 'Story Hub', badge: { text: 'MỚI', color: '#00b14f' } },
+              { to: '/jobs', icon: '🏆', label: 'Story Hub', badge: { text: 'MỚI', color: '#10b981', bg: '#d1fae5' } },
               { to: '/companies', icon: '💬', label: 'Review công ty' },
               { to: '/jobs', icon: '📈', label: 'Báo cáo lương IT' },
-            ].map((item, idx, arr) => (
+            ].map((item, idx) => (
               <Link
                 key={idx}
                 to={item.to}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '8px',
-                  textDecoration: 'none', color: '#121212',
-                  fontWeight: '500', fontSize: '15px',
-                  flex: 1, justifyContent: 'center',
-                  padding: '8px 0',
-                  borderRight: idx < arr.length - 1 ? '1px solid #e0e0e0' : 'none',
-                  transition: 'color 0.2s'
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  alignItems: 'center', 
+                  gap: '8px',
+                  textDecoration: 'none', 
+                  color: '#475569',
+                  fontWeight: '600', 
+                  fontSize: '14px',
+                  transition: 'all 0.3s ease',
+                  position: 'relative',
+                  flex: 1
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = '#ed1b2f'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = '#121212'; }}
+                onMouseEnter={(e) => { 
+                  e.currentTarget.style.color = '#ed1b2f'; 
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                }}
+                onMouseLeave={(e) => { 
+                  e.currentTarget.style.color = '#475569'; 
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
               >
-                <span style={{ fontSize: '20px' }}>{item.icon}</span>
-                {item.label}
-                {item.badge && (
-                  <span style={{
-                    backgroundColor: item.badge.color, color: '#fff',
-                    fontSize: '10px', padding: '2px 6px',
-                    borderRadius: '4px', fontWeight: 'bold'
-                  }}>
-                    {item.badge.text}
-                  </span>
-                )}
+                <div style={{ 
+                  width: '48px', 
+                  height: '48px', 
+                  borderRadius: '12px', 
+                  background: '#f1f5f9', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  fontSize: '24px',
+                  marginBottom: '4px',
+                  transition: 'background 0.3s'
+                }} className="icon-box">
+                  {item.icon}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {item.label}
+                  {item.badge && (
+                    <span style={{
+                      backgroundColor: item.badge.bg, 
+                      color: item.badge.color,
+                      fontSize: '10px', 
+                      padding: '2px 6px',
+                      borderRadius: '8px', 
+                      fontWeight: '800'
+                    }}>
+                      {item.badge.text}
+                    </span>
+                  )}
+                </div>
               </Link>
             ))}
           </div>
@@ -231,7 +268,7 @@ function Home() {
       </section>
 
       {/* STATS SECTION */}
-      <section style={{ padding: '40px 0', backgroundColor: '#121212' }}>
+      <section style={{ padding: '40px 0', backgroundColor: '#0f172a' }}>
         <div className="container">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px', textAlign: 'center' }}>
             <div>

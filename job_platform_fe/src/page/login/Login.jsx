@@ -43,8 +43,9 @@ function Login() {
         window.dispatchEvent(new Event('auth-changed'));
         
         const decoded = decodeToken(accessToken);
-        if (decoded.role === 'ADMIN') navigate('/admin');
-        else if (decoded.role === 'recruiter') navigate('/my-posts');
+        const role = (decoded?.role || decoded?.roles || '').toUpperCase();
+        if (role === 'ADMIN') navigate('/admin');
+        else if (role === 'RECRUITER') navigate('/my-posts');
         else navigate('/');
       } else {
         setError(res.data.message);
@@ -93,8 +94,30 @@ function Login() {
       return;
     }
 
-    if(newPassword.length<6){
-      setError("Mật khẩu phải dài 6 chữ số!!!");
+    const minLength = /^.{8,}$/;
+    const hasUpper = /[A-Z]/;
+    const hasLower = /[a-z]/;
+    const hasNumber = /[0-9]/;
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/;
+
+    if (!minLength.test(newPassword)) {
+      setError("Mật khẩu phải có ít nhất 8 ký tự.");
+      return;
+    }
+    if (!hasUpper.test(newPassword)) {
+      setError("Mật khẩu phải chứa ít nhất 1 chữ hoa.");
+      return;
+    }
+    if (!hasLower.test(newPassword)) {
+      setError("Mật khẩu phải chứa ít nhất 1 chữ thường.");
+      return;
+    }
+    if (!hasNumber.test(newPassword)) {
+      setError("Mật khẩu phải chứa ít nhất 1 chữ số.");
+      return;
+    }
+    if (!hasSpecial.test(newPassword)) {
+      setError("Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt.");
       return;
     }
 

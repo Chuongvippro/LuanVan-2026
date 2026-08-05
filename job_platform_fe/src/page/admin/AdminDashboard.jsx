@@ -424,9 +424,6 @@ function AdminDashboard() {
     <div className="admin-layout">
       {/* Sidebar */}
       <aside className="admin-sidebar">
-        <h3 style={{ padding: '0 24px 20px', fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)' }}>
-          🛡️ Admin Panel
-        </h3>
         {menuItems.map(item => (
           <button
             key={item.key}
@@ -434,6 +431,9 @@ function AdminDashboard() {
             onClick={() => setActiveTab(item.key)}
           >
             <span>{item.icon}</span> {item.label}
+            {item.key === 'bugs' && (stats.pendingBugs > 0) && (
+              <span className="sidebar-badge">{stats.pendingBugs}</span>
+            )}
           </button>
         ))}
       </aside>
@@ -443,23 +443,92 @@ function AdminDashboard() {
         {/* TAB 1: THỐNG KÊ */}
         {activeTab === 'stats' && (
           <>
-            <h2 style={{ marginBottom: '24px' }}>📊 Thống kê tổng quan</h2>
+            {/* Welcome Card */}
+            <div className="welcome-card">
+              <div className="welcome-row">
+                <div>
+                  <h2>Chào mừng trở lại, Admin! 👋</h2>
+                  <p>Dưới đây là tổng quan hoạt động của hệ thống JobPlatform hôm nay.</p>
+                </div>
+                <div className="welcome-date">
+                  📅 {new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </div>
+              </div>
+            </div>
+
+            {/* Stat Cards */}
             <div className="stat-grid">
               <div className="stat-card">
+                <div className="stat-icon icon-users">👥</div>
                 <div className="stat-value">{stats.totalUsers || 0}</div>
-                <div className="stat-label">👥 Tổng tài khoản</div>
+                <div className="stat-label">Tổng tài khoản</div>
+                <div className="stat-change up">📈 Đang hoạt động</div>
               </div>
               <div className="stat-card">
+                <div className="stat-icon icon-jobs">📋</div>
                 <div className="stat-value">{stats.totalJobs || 0}</div>
-                <div className="stat-label">📋 Tổng bài đăng</div>
+                <div className="stat-label">Tổng bài đăng</div>
+                <div className="stat-change up">💼 Việc làm</div>
               </div>
               <div className="stat-card">
+                <div className="stat-icon icon-apps">📨</div>
                 <div className="stat-value">{stats.totalApplications || 0}</div>
-                <div className="stat-label">📨 Tổng lượt ứng tuyển</div>
+                <div className="stat-label">Tổng lượt ứng tuyển</div>
+                <div className="stat-change up">🚀 Ứng tuyển</div>
               </div>
               <div className="stat-card">
+                <div className="stat-icon icon-bugs">🐛</div>
                 <div className="stat-value">{stats.pendingBugs || 0}</div>
-                <div className="stat-label">🐛 Lỗi hệ thống chờ xử lý</div>
+                <div className="stat-label">Lỗi chờ xử lý</div>
+                <div className="stat-change up">⏳ Đang chờ</div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0f172a', marginBottom: '16px' }}>⚡ Truy cập nhanh</h3>
+            <div className="quick-actions">
+              <div className="quick-action-card" onClick={() => setActiveTab('candidates')}>
+                <div className="quick-action-icon" style={{ background: '#eff6ff' }}>👨‍🎓</div>
+                <div>
+                  <h4>Quản lý Ứng viên</h4>
+                  <p>Xem và quản lý tài khoản ứng viên trên hệ thống</p>
+                </div>
+              </div>
+              <div className="quick-action-card" onClick={() => setActiveTab('recruiters')}>
+                <div className="quick-action-icon" style={{ background: '#f0fdf4' }}>🏢</div>
+                <div>
+                  <h4>Quản lý Nhà tuyển dụng</h4>
+                  <p>Duyệt xác minh và quản lý doanh nghiệp</p>
+                </div>
+              </div>
+              <div className="quick-action-card" onClick={() => setActiveTab('bugs')}>
+                <div className="quick-action-icon" style={{ background: '#fef2f2' }}>🐛</div>
+                <div>
+                  <h4>Xử lý Bug</h4>
+                  <p>Xem và giải quyết các lỗi được báo cáo</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Info Section */}
+            <div className="dashboard-grid-2">
+              <div className="info-card">
+                <h3>📌 Thông tin hệ thống</h3>
+                <ul className="info-list">
+                  <li><span className="info-list-dot dot-green"></span> Hệ thống đang hoạt động bình thường</li>
+                  <li><span className="info-list-dot dot-blue"></span> Backend API: Port 8090</li>
+                  <li><span className="info-list-dot dot-blue"></span> Database: MySQL - job_platform</li>
+                  <li><span className="info-list-dot dot-orange"></span> Tích hợp AI: GROQ API (3 keys)</li>
+                </ul>
+              </div>
+              <div className="info-card">
+                <h3>🔔 Ghi chú nhanh</h3>
+                <ul className="info-list">
+                  <li><span className="info-list-dot dot-green"></span> Kiểm tra xác minh doanh nghiệp mới</li>
+                  <li><span className="info-list-dot dot-orange"></span> {stats.pendingBugs || 0} bug đang chờ xử lý</li>
+                  <li><span className="info-list-dot dot-blue"></span> Quản lý ngành nghề & danh mục</li>
+                  <li><span className="info-list-dot dot-red"></span> Theo dõi bài đăng vi phạm</li>
+                </ul>
               </div>
             </div>
           </>
@@ -468,7 +537,11 @@ function AdminDashboard() {
         {/* TAB 2: ỨNG VIÊN */}
         {activeTab === 'candidates' && (
           <>
-            <h2 style={{ marginBottom: '24px' }}>👨‍🎓 Quản lý tài khoản Ứng viên</h2>
+            <h2>👨‍🎓 Quản lý tài khoản Ứng viên</h2>
+            <div className="table-header">
+              <p className="section-subtitle">Danh sách tất cả tài khoản ứng viên trên hệ thống</p>
+              <span className="table-count">Tổng: {candidates.length} ứng viên</span>
+            </div>
             <div className="data-table">
               <table>
                 <thead>
@@ -528,7 +601,11 @@ function AdminDashboard() {
         {/* TAB 3: NHÀ TUYỂN DỤNG */}
         {activeTab === 'recruiters' && (
           <>
-            <h2 style={{ marginBottom: '24px' }}>🏢 Quản lý tài khoản Nhà tuyển dụng</h2>
+            <h2>🏢 Quản lý tài khoản Nhà tuyển dụng</h2>
+            <div className="table-header">
+              <p className="section-subtitle">Quản lý và xác minh doanh nghiệp tuyển dụng</p>
+              <span className="table-count">Tổng: {recruiters.length} nhà tuyển dụng</span>
+            </div>
             <div className="data-table">
               <table>
                 <thead>
@@ -601,7 +678,11 @@ function AdminDashboard() {
         {/* TAB 4: BÀI ĐĂNG */}
         {activeTab === 'jobs' && (
           <>
-            <h2 style={{ marginBottom: '24px' }}>📋 Quản lý bài đăng</h2>
+            <h2>📋 Quản lý bài đăng</h2>
+            <div className="table-header">
+              <p className="section-subtitle">Kiểm soát và quản lý các bài đăng việc làm</p>
+              <span className="table-count">Tổng: {jobs.length} bài đăng</span>
+            </div>
             <div className="data-table">
               <table>
                 <thead>
@@ -660,10 +741,13 @@ function AdminDashboard() {
         {/* TAB: NGÀNH */}
         {activeTab === 'industries' && (
           <>
-            <h2 style={{ marginBottom: '24px' }}>🏭 Quản lý Ngành</h2>
-            <button className="btn btn-primary" onClick={() => setEditingItem({ type: 'industries', data: {} })}>
-              ➕ Thêm ngành
-            </button>
+            <h2>🏭 Quản lý Ngành</h2>
+            <div className="table-header">
+              <p className="section-subtitle">Quản lý các ngành nghề trong hệ thống</p>
+              <button className="btn-add" onClick={() => setEditingItem({ type: 'industries', data: {} })}>
+                ➕ Thêm ngành
+              </button>
+            </div>
             <div className="data-table">
               <table>
                 <thead>
@@ -705,10 +789,13 @@ function AdminDashboard() {
       {/* TAB: DANH MỤC NGHỀ */}
       {activeTab === 'categories' && (
         <>
-          <h2 style={{ marginBottom: '24px' }}>💼 Quản lý Danh mục nghề</h2>
-          <button className="btn btn-primary" onClick={() => setEditingItem({ type: 'categories', data: {} })}>
-            ➕ Thêm danh mục
-          </button>
+          <h2>💼 Quản lý Danh mục nghề</h2>
+          <div className="table-header">
+            <p className="section-subtitle">Phân loại nghề nghiệp theo ngành</p>
+            <button className="btn-add" onClick={() => setEditingItem({ type: 'categories', data: {} })}>
+              ➕ Thêm danh mục
+            </button>
+          </div>
           <div className="data-table">
             <table>
               <thead>
@@ -752,7 +839,11 @@ function AdminDashboard() {
         {/* TAB 5: NHẬT KÝ LỖI */}
         {activeTab === 'bugs' && (
         <>
-          <h2 style={{ marginBottom: '24px' }}>🐛 Quản lý Bug</h2>
+          <h2>🐛 Quản lý Bug</h2>
+          <div className="table-header">
+            <p className="section-subtitle">Theo dõi và xử lý các lỗi được người dùng báo cáo</p>
+            <span className="table-count">Tổng: {bugs.length} báo cáo</span>
+          </div>
           <div className="data-table">
             <table>
               <thead>
@@ -831,7 +922,7 @@ function AdminDashboard() {
         />
       )}
 
-      //xem ảnh minh họa lỗi
+      {/* Xem ảnh minh họa lỗi */}
       {previewImgUrl && (
         <div className="modal-overlay" onClick={closeScreenshotPreview}>
           <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px' }}>

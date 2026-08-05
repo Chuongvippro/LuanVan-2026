@@ -1,14 +1,16 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import api, { checkToken } from '../service/api';
+import './Navbar.css';
 
 function Navbar() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     const initUser = async () => {
-      const userData = await checkToken(); // Kiểm tra và tự động làm mới ngầm nếu cần
+      const userData = await checkToken();
       setUser(userData);
       setIsLoading(false);
     };
@@ -19,66 +21,53 @@ function Navbar() {
 
   const handleLogout = async () => {
     const refreshToken = localStorage.getItem('refreshToken');
-    try{
-      if(refreshToken){
+    try {
+      if (refreshToken) {
         await api.post('/auth/logout', { refreshToken });
       }
-    }catch (error) {
+    } catch (error) {
       console.error('Error during logout:', error);
-    }finally {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    window.dispatchEvent(new Event('auth-changed'));
-    setUser(null); // Xóa state user để Navbar chuyển về trạng thái Chưa đăng nhập ngay lập tức
-    navigate('/login');
+    } finally {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      window.dispatchEvent(new Event('auth-changed'));
+      setUser(null);
+      navigate('/login');
     }
   };
 
   return (
-    <nav className="navbar" style={{ position: 'sticky', top: 0, zIndex: 1000, boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
+    <nav className="premium-navbar">
       <div className="container">
-        <div className="d-flex align-items-center gap-4">
-          <Link to="/" className="navbar-logo">
+        
+        {/* Left side */}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <Link to="/" className="nav-brand">
             <span>Job</span>Platform
           </Link>
-          <div className="navbar-links">
-            <Link to="/jobs">All Jobs</Link>
-            <Link to="/companies">IT Companies</Link>
+          <div className="nav-menu">
+            <Link to="/jobs" className="nav-link">Tìm siêu việc (All Jobs)</Link>
+            <Link to="/companies" className="nav-link">Công ty IT (IT Companies)</Link>
           </div>
         </div>
 
-        <div className="navbar-actions d-flex align-items-center gap-3" style={{ height: '100%' }}>
+        {/* Right side Actions */}
+        <div className="nav-actions">
           
-          {/* Nút dành cho Nhà tuyển dụng */}
           {(!user || user.role !== 'recruiter') && (
-            <Link to="/post-job" style={{ 
-              display: 'flex', flexDirection: 'column', padding: '4px 12px', 
-              border: '1px solid #333', borderRadius: '4px', textDecoration: 'none',
-              backgroundColor: 'rgba(255,255,255,0.05)', transition: 'background 0.2s',
-              marginRight: '10px'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
-            >
-              <span style={{ fontSize: '11px', color: '#a6a6a6', lineHeight: '1' }}>Dành cho</span>
-              <span style={{ fontSize: '14px', color: '#fff', fontWeight: '600', lineHeight: '1.2' }}>Nhà Tuyển Dụng</span>
+            <Link to="/post-job" className="nav-employer-btn">
+              <span className="employer-sm">Dành cho</span>
+              <span className="employer-lg">Nhà Tuyển Dụng</span>
             </Link>
           )}
           
           {user ? (
-            <div className="user-dropdown-container">
-              <div className="user-dropdown-trigger d-flex align-items-center gap-2" style={{ cursor: 'pointer', padding: '5px' }}>
-                
-                {/* Avatar ITviec style */}
-                <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid transparent', overflow: 'hidden', padding: '2px' }}>
-                  <div style={{ width: '100%', height: '100%', borderRadius: '50%', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#ed1b2f' }}>
-                      {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
-                    </span>
-                  </div>
+            <div className="user-dropdown-container nav-user">
+              <div className="nav-user-trigger">
+                <div className="nav-avatar">
+                  {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                 </div>
-                
-                <span style={{ color: '#a6a6a6', fontSize: '10px', marginLeft: '2px' }}>▼</span>
+                <span className="nav-chevron">▼</span>
               </div>
               
               <div className="user-dropdown-menu">
@@ -88,8 +77,8 @@ function Navbar() {
                       {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                     </span>
                   </div>
-                  <div style={{ overflow: 'hidden' }}>
-                    <div style={{ fontWeight: '600', fontSize: '16px', color: '#121212', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name || 'Người dùng'}</div>
+                  <div style={{ overflow: 'hidden', marginLeft: '12px' }}>
+                    <div style={{ fontWeight: '700', fontSize: '15px', color: '#0f172a', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name || 'Người dùng'}</div>
                     <div style={{ fontSize: '13px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.email || 'Chưa cập nhật email'}</div>
                   </div>
                 </div>
@@ -114,7 +103,7 @@ function Navbar() {
                 </div>
                 
                 <div className="user-dropdown-footer">
-                  <button onClick={handleLogout} className="user-dropdown-item" style={{ width: '100%', textAlign: 'left', border: 'none', background: 'none', cursor: 'pointer', color: '#d32f2f' }}>
+                  <button onClick={handleLogout} className="user-dropdown-item" style={{ width: '100%', textAlign: 'left', border: 'none', background: 'none', cursor: 'pointer', color: '#ef4444' }}>
                     <span className="user-dropdown-icon">🚪</span> Đăng xuất
                   </button>
                 </div>
@@ -122,11 +111,12 @@ function Navbar() {
             </div>
           ) : (
             <>
-              <Link to="/login" className="btn btn-outline" style={{ padding: '8px 16px', fontWeight: '600', color: '#fff', borderColor: 'rgba(255,255,255,0.5)' }}>Đăng nhập</Link>
-              <Link to="/register" className="btn btn-primary" style={{ padding: '8px 16px', fontWeight: '600', backgroundColor: '#ed1b2f', borderColor: '#ed1b2f' }}>Đăng ký</Link>
+              <Link to="/login" className="nav-btn nav-btn-light">Đăng nhập</Link>
+              <Link to="/register" className="nav-btn nav-btn-primary">Đăng ký</Link>
             </>
           )}
         </div>
+
       </div>
     </nav>
   );

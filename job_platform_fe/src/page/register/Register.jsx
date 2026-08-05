@@ -109,7 +109,34 @@ function Register() {
     setSuccess('');
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError('Mật khẩu nhập lại không khớp!');
+      return;
+    }
+
+    const minLength = /^.{8,}$/;
+    const hasUpper = /[A-Z]/;
+    const hasLower = /[a-z]/;
+    const hasNumber = /[0-9]/;
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/;
+
+    if (!minLength.test(formData.password)) {
+      setError("Mật khẩu phải có ít nhất 8 ký tự.");
+      return;
+    }
+    if (!hasUpper.test(formData.password)) {
+      setError("Mật khẩu phải chứa ít nhất 1 chữ hoa.");
+      return;
+    }
+    if (!hasLower.test(formData.password)) {
+      setError("Mật khẩu phải chứa ít nhất 1 chữ thường.");
+      return;
+    }
+    if (!hasNumber.test(formData.password)) {
+      setError("Mật khẩu phải chứa ít nhất 1 chữ số.");
+      return;
+    }
+    if (!hasSpecial.test(formData.password)) {
+      setError("Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt.");
       return;
     }
 

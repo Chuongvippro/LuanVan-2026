@@ -1,17 +1,17 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
   --primary-color: #ed1b2f;
   --primary-hover: #cc1627;
-  --text-main: #121212;
-  --text-secondary: #4a4a4a;
-  --text-muted: #a6a6a6;
-  --bg-main: #f2f2f2;
+  --text-main: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --bg-main: #f8fafc;
   --bg-card: #ffffff;
-  --bg-header: #121212;
-  --border-color: #e5e5e5;
-  --font-family: 'Roboto', sans-serif;
-  --radius-sm: 4px;
+  --bg-header: #ffffff;
+  --border-color: #e2e8f0;
+  --font-family: 'Inter', sans-serif;
+  --radius-sm: 8px;
   --radius-md: 8px;
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
   --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
@@ -419,11 +419,14 @@ a:hover {
   white-space: nowrap;
   flex: 1;
   position: relative;
+  display: flex;
 }
 
 .marquee-content {
-  display: inline-block;
-  animation: marquee-scroll 20s linear infinite;
+  display: flex;
+  align-items: center;
+  animation: marquee-scroll 25s linear infinite;
+  padding-left: 20px;
 }
 
 .marquee-content:hover {
@@ -432,10 +435,10 @@ a:hover {
 
 @keyframes marquee-scroll {
   0% {
-    transform: translateX(100%);
+    transform: translateX(0);
   }
   100% {
-    transform: translateX(-100%);
+    transform: translateX(-50%);
   }
 }
 

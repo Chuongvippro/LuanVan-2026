@@ -2,34 +2,33 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../service/api';
 import JobCard from '../../components/JobCard';
+import './JobList.css';
 
 function JobList() {
   const [jobs, setJobs] = useState([]);
   const [categories, setCategories] = useState([]);
-  //state của danh sách ngành lớn
   const [industries, setIndustries] = useState([]);
   const [jobTypes, setJobTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(0);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // Filter states
   const [keyword, setKeyword] = useState(searchParams.get('keyword') || '');
   const [categoryId, setCategoryId] = useState(searchParams.get('categoryId') || '');
-  const [industryId, setIndustryId] = useState(searchParams.get('industryId') || ''); // Ngành lớn
+  const [industryId, setIndustryId] = useState(searchParams.get('industryId') || '');
   const [location, setLocation] = useState(searchParams.get('location') || '');
   const [jobType, setJobType] = useState(searchParams.get('jobType') || '');
   const [page, setPage] = useState(0);
 
-    const fetchIndustries= async()=>{
-    try{
+  const fetchIndustries = async () => {
+    try {
       const res = await api.get('/industries');
-      if(res.data.success) setIndustries(res.data.data||[]);
-    }catch(err){
+      if (res.data.success) setIndustries(res.data.data || []);
+    } catch (err) {
       console.error(err);
     }
-  }
+  };
 
   const fetchCategories = async () => {
     try {
@@ -39,6 +38,7 @@ function JobList() {
       console.error(err);
     }
   };
+
   const fetchJobTypes = async () => {
     try {
       const res = await api.get('/job-types');
@@ -71,6 +71,7 @@ function JobList() {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     fetchCategories();
     fetchIndustries();
@@ -79,9 +80,9 @@ function JobList() {
 
   useEffect(() => {
     fetchJobs();
-  }, [page, keyword, categoryId,industryId, location, jobType]);
-
-
+    // scrollToTop if page changes
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [page, keyword, categoryId, industryId, location, jobType]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -99,36 +100,33 @@ function JobList() {
   };
 
   return (
-    <div className="container" style={{ padding: '40px 15px' }}>
-      <div className="d-flex" style={{ gap: '30px', alignItems: 'flex-start' }}>
+    <div className="job-list-page">
+      <div className="job-list-container">
         
         {/* SIDEBAR BỘ LỌC */}
-        <aside className="card" style={{ width: '300px', flexShrink: 0 }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '20px', borderBottom: '1px solid #e5e5e5', paddingBottom: '10px' }}>
-            🔍 Bộ lọc nâng cao
-          </h3>
+        <aside className="job-filter-sidebar">
+          <h3><span style={{ fontSize: '20px' }}>⚡</span> Bộ lọc nâng cao</h3>
 
           <form onSubmit={handleSearch}>
-            <div className="form-group">
-              <label>Từ khóa</label>
+            <div className="filter-group">
+              <label>Từ khóa / Vai trò</label>
               <input
                 type="text"
-                className="form-control"
-                placeholder="Vị trí, kỹ năng..."
+                className="filter-input"
+                placeholder="Vị trí, kỹ năng, công ty..."
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
               />
             </div>
 
-            {/* NGÀNH LỚN */}
-            <div className="form-group">
+            <div className="filter-group">
               <label>Ngành nghề chính</label>
               <select 
-                className="form-control" 
+                className="filter-select" 
                 value={industryId} 
                 onChange={(e) => {
                   setIndustryId(e.target.value);
-                  setCategoryId(''); // Reset ngành nhỏ mỗi khi đổi ngành lớn
+                  setCategoryId('');
                 }}
               >
                 <option value="">Tất cả ngành nghề</option>
@@ -138,66 +136,72 @@ function JobList() {
               </select>
             </div>
 
-            {/* NGÀNH NHỎ */}
-            <div className="form-group">
-              <label>Chuyên môn / Ngành nhỏ</label>
+            <div className="filter-group">
+              <label>Chuyên môn (Lĩnh vực nhỏ)</label>
               <select 
-                className="form-control" 
+                className="filter-select" 
                 value={categoryId} 
                 onChange={(e) => setCategoryId(e.target.value)}
               >
-                <option value="">-- Chọn phân ngành --</option>
-                {/* Dùng Number(cat.industry.id) === Number(industryId) cho chuẩn đét */}
-                {industryId && categories
-                  .filter(cat => cat.industry && Number(cat.industry.id) === Number(industryId))
-                  .map(cat => (
+                <option value="">Tất cả chuyên môn</option>
+                {industryId ? (
+                  categories
+                    .filter(cat => cat.industry && Number(cat.industry.id) === Number(industryId))
+                    .map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))
+                ) : (
+                  categories.map(cat => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
+                  ))
+                )}
               </select>
             </div>
 
-            <div className="form-group">
+            <div className="filter-group">
               <label>Địa điểm</label>
-              <select className="form-control" value={location} onChange={(e) => setLocation(e.target.value)}>
-                <option value="">Tất cả</option>
+              <select className="filter-select" value={location} onChange={(e) => setLocation(e.target.value)}>
+                <option value="">Toàn quốc</option>
                 <option value="Hà Nội">Hà Nội</option>
-                <option value="Hồ Chí Minh">Hồ Chí Minh</option>
+                <option value="Hồ Chí Minh">TP. Hồ Chí Minh</option>
                 <option value="Đà Nẵng">Đà Nẵng</option>
                 <option value="Cần Thơ">Cần Thơ</option>
-                <option value="Khác">Khác</option>
+                <option value="Khác">Khu vực khác</option>
               </select>
             </div>
 
-            <div className="form-group" style={{ marginBottom: '25px' }}>
-              <label>Hình thức</label>
-              <select className="form-control" value={jobType} onChange={(e) => setJobType(e.target.value)}>
-                <option value="">Tất cả</option>
+            <div className="filter-group">
+              <label>Hình thức làm việc</label>
+              <select className="filter-select" value={jobType} onChange={(e) => setJobType(e.target.value)}>
+                <option value="">Tất cả hình thức</option>
                 {jobTypes.map(type => (
                   <option key={type} value={type}>{type}</option>
                 ))}
               </select>
             </div>
 
-            <button type="submit" className="btn btn-primary btn-block" style={{ marginBottom: '10px' }}>
-              Tìm kiếm
+            <button type="submit" className="filter-btn-submit">
+              🔍 Tìm kiếm việc làm
             </button>
-            <button type="button" className="btn btn-outline btn-block" onClick={clearFilters}>
-              Xóa bộ lọc
+            <button type="button" className="filter-btn-clear" onClick={clearFilters}>
+              Xóa thiết lập lọc
             </button>
           </form>
         </aside>
 
         {/* DANH SÁCH VIỆC LÀM */}
-        <main style={{ flex: 1 }}>
-          <div style={{ marginBottom: '20px' }}>
-            <h2 style={{ fontSize: '24px', margin: '0 0 5px 0' }}>Danh sách việc làm</h2>
-            <p className="text-muted">
-              {jobs.length > 0 ? `Tìm thấy ${jobs.length} việc làm phù hợp` : 'Không tìm thấy kết quả phù hợp'}
+        <main className="job-list-main">
+          <div className="job-list-header">
+            <h2>Hàng ngàn việc làm IT chất lượng</h2>
+            <p className="job-list-count">
+              {jobs.length > 0 ? `Chúng tôi đã tìm thấy ${jobs.length} cơ hội tốt nhất dành cho bạn` : 'Không có việc làm phù hợp với tiêu chí của bạn.'}
             </p>
           </div>
 
           {loading ? (
-            <div className="text-center" style={{ padding: '40px' }}>Đang tải dữ liệu...</div>
+            <div className="company-loading" style={{ marginTop: '20px' }}>
+              Đang tải danh sách việc làm tốt nhất...
+            </div>
           ) : (
             <>
               <div>
@@ -208,31 +212,41 @@ function JobList() {
 
               {/* PAGINATION */}
               {totalPages > 1 && (
-                <div className="d-flex justify-content-center gap-2 mt-4" style={{ marginTop: '30px' }}>
+                <div className="job-pagination">
                   <button 
-                    className="btn btn-outline" 
+                    className="job-pagination-btn wide" 
                     disabled={page === 0} 
                     onClick={() => setPage(p => p - 1)}
                   >
-                    ← Trước
+                    ← Lùi
                   </button>
                   
-                  {Array.from({ length: totalPages }, (_, i) => (
-                    <button 
-                      key={i} 
-                      className={`btn ${page === i ? 'btn-primary' : 'btn-outline'}`}
-                      onClick={() => setPage(i)}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
+                  {Array.from({ length: totalPages }, (_, i) => {
+                    // Hiển thị max 5 trang cho gọn
+                    if (i === 0 || i === totalPages - 1 || Math.abs(page - i) <= 1) {
+                      return (
+                        <button 
+                          key={i} 
+                          className={`job-pagination-btn ${page === i ? 'active' : ''}`}
+                          onClick={() => setPage(i)}
+                        >
+                          {i + 1}
+                        </button>
+                      );
+                    } else if (i === 1 && page > 2) {
+                      return <span key={i} style={{ display: 'flex', alignItems: 'center', color: '#94a3b8' }}>...</span>;
+                    } else if (i === totalPages - 2 && page < totalPages - 3) {
+                      return <span key={i} style={{ display: 'flex', alignItems: 'center', color: '#94a3b8' }}>...</span>;
+                    }
+                    return null;
+                  })}
                   
                   <button 
-                    className="btn btn-outline" 
+                    className="job-pagination-btn wide" 
                     disabled={page >= totalPages - 1} 
                     onClick={() => setPage(p => p + 1)}
                   >
-                    Sau →
+                    Tiến →
                   </button>
                 </div>
               )}

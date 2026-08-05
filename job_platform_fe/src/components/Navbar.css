@@ -1,0 +1,186 @@
+/* ====================================================
+   Navbar - Premium Modern Design
+   ==================================================== */
+
+.premium-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  padding: 16px 0;
+  transition: all 0.3s ease;
+}
+
+.premium-navbar .container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Brand */
+.nav-brand {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+}
+
+.nav-brand span {
+  color: #ed1b2f;
+}
+
+/* Links */
+.nav-menu {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  margin-left: 40px;
+}
+
+.nav-link {
+  text-decoration: none;
+  color: #475569;
+  font-weight: 600;
+  font-size: 15px;
+  transition: color 0.2s;
+  position: relative;
+}
+
+.nav-link:hover {
+  color: #0f172a;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #ed1b2f;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.3s ease;
+}
+
+.nav-link:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* Actions */
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.nav-employer-btn {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  text-decoration: none;
+  background: #f8fafc;
+  transition: all 0.2s ease;
+}
+
+.nav-employer-btn:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.employer-sm {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.employer-lg {
+  font-size: 14px;
+  color: #0f172a;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.nav-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.nav-btn-light {
+  color: #0f172a;
+  background: #f1f5f9;
+}
+
+.nav-btn-light:hover {
+  background: #e2e8f0;
+}
+
+.nav-btn-primary {
+  color: #fff;
+  background: #ed1b2f;
+}
+
+.nav-btn-primary:hover {
+  background: #cc1627;
+  box-shadow: 0 4px 12px rgba(237, 27, 47, 0.2);
+}
+
+/* User Dropdown */
+.nav-user {
+  position: relative;
+  cursor: pointer;
+}
+
+.nav-user-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+  border-radius: 20px;
+  transition: background 0.2s;
+}
+
+.nav-user-trigger:hover {
+  background: #f1f5f9;
+}
+
+.nav-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #cbd5e1;
+  color: #ed1b2f;
+  font-weight: 700;
+  font-size: 18px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.nav-chevron {
+  color: #64748b;
+  font-size: 12px;
+  margin-right: 4px;
+}

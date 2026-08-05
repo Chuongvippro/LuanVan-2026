@@ -9,45 +9,45 @@ function JobCard({ job }) {
     return `${baseUrl}${logoPath}`;
   };
 
-  // ITviec style Job Card
   return (
-    <div className="card d-flex gap-3 mb-3" style={{ border: '1px solid #e5e5e5', transition: 'border 0.2s', padding: '20px' }}>
-      <div style={{ width: '100px', height: '100px', border: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', borderRadius: '8px', padding: job.companyLogo ? '8px' : '0' }}>
+    <div className="job-card">
+      <div className="job-card-logo">
         {job.companyLogo ? (
-          <img src={getLogoUrl(job.companyLogo)} alt={job.companyName} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          <img src={getLogoUrl(job.companyLogo)} alt={job.companyName} />
         ) : (
-          <span className="text-muted" style={{ fontSize: '24px', fontWeight: '700', textAlign: 'center', color: '#ed1b2f' }}>
+          <span className="job-card-logo-text">
             {job.companyName ? job.companyName.charAt(0).toUpperCase() : '?'}
           </span>
         )}
       </div>
-      <div style={{ flex: 1 }}>
-        <h3 style={{ margin: '0 0 5px 0', fontSize: '18px' }}>
-          <Link to={`/jobs/${job.id}`} style={{ color: '#121212', textDecoration: 'none' }}>
+
+      <div className="job-card-content">
+        <h3 className="job-card-title">
+          <Link to={`/jobs/${job.id}`}>
             {job.title}
           </Link>
         </h3>
-        <p style={{ margin: '0 0 10px 0', color: '#4a4a4a', fontSize: '15px' }}>{job.companyName}</p>
+        <p className="job-card-company">{job.companyName}</p>
         
-        <div className="d-flex align-items-center gap-4 mb-2">
-          <span style={{ color: '#00b14f', fontWeight: '500', fontSize: '16px' }}>
-             {job.salary || 'Thỏa thuận'}
-          </span>
-          <span className="text-muted" style={{ fontSize: '14px' }}>
+        <div className="job-card-meta">
+          <div className="job-card-salary">
+            💰 {job.salary || 'Thỏa thuận'}
+          </div>
+          <div className="job-card-info">
             📍 {job.locationAddress || job.location || 'Chưa cập nhật'}
-          </span>
-          <span className="text-muted" style={{ fontSize: '14px' }}>
+          </div>
+          <div className="job-card-info">
             💼 {job.jobType === 'full-time' ? 'Toàn thời gian' : job.jobType}
-          </span>
+          </div>
         </div>
 
-        <div className="d-flex gap-2 mt-3">
-           <span style={{ border: '1px solid #e5e5e5', borderRadius: '4px', padding: '4px 10px', fontSize: '12px', color: '#4a4a4a' }}>
-             {job.experienceLevel === 'senior' ? 'Senior' : job.experienceLevel === 'mid' ? 'Mid-level' : 'Fresher/Junior'}
+        <div className="job-card-tags">
+           <span className="job-card-tag">
+             {job.experienceLevel === 'senior' ? 'Senior (Kinh nghiệm)' : job.experienceLevel === 'mid' ? 'Mid-level' : 'Fresher/Junior'}
            </span>
            {job.categoryName && (
-             <span style={{ border: '1px solid #e5e5e5', borderRadius: '4px', padding: '4px 10px', fontSize: '12px', color: '#4a4a4a' }}>
-               {job.categoryName}
+             <span className="job-card-tag">
+               🚀 {job.categoryName}
              </span>
            )}
         </div>
