@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api, { decodeToken, checkToken } from '../../service/api';
+import api, { checkToken } from '../../service/api';
 import './profile.css';
 
-function EditableField({ label, value, onSave }) {
+function EditableField({ label, value, onSave, icon = "✏️" }) {
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState(value || '');
   const [prevValue, setPrevValue] = useState(value);
-
 
   if (value !== prevValue) {
     setPrevValue(value);
@@ -20,12 +19,12 @@ function EditableField({ label, value, onSave }) {
   };
 
   return (
-    <div className="profile-field-item" style={{ flex: 1, marginBottom: 0 }}>
-      <span className="field-label">{label}:</span>
+    <div className="profile-field-modern editable">
+      <span className="field-label-modern">{icon} {label}:</span>
       {isEditing ? (
         <input
           type="text"
-          className="field-input"
+          className="field-input-modern"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onBlur={handleBlurOrEnter}
@@ -33,7 +32,7 @@ function EditableField({ label, value, onSave }) {
           autoFocus
         />
       ) : (
-        <div className={`field-value-display ${value ? '' : 'field-empty'}`} onClick={() => setIsEditing(true)}>
+        <div className={`field-value-display editable-text ${value ? '' : 'field-empty'}`} onClick={() => setIsEditing(true)}>
           {value || `(Bấm vào đây để bổ sung ${label.toLowerCase()})`}
         </div>
       )}
@@ -41,12 +40,11 @@ function EditableField({ label, value, onSave }) {
   );
 }
 
-
-function ReadOnlyField({ label, value }) {
+function ReadOnlyField({ label, value, icon = "📌" }) {
   return (
-    <div className="profile-field-item readonly" style={{ flex: 1, marginBottom: 0 }}>
-      <span className="field-label">{label}:</span>
-      <div className={`field-value-display readonly-value ${value ? '' : 'field-empty'}`}>
+    <div className="profile-field-modern">
+      <span className="field-label-modern">{icon} {label}:</span>
+      <div className={`field-value-display ${value ? '' : 'field-empty'}`}>
         {value || '(Chưa có dữ liệu)'}
       </div>
     </div>
@@ -62,6 +60,11 @@ function Profile() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passWordData, setPassWordData] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
   const [passWordLoading, setPassWordLoading] = useState(false);
+  
+  const [cvFile, setCvFile] = useState(null);
+  const [uploadingCv, setUploadingCv] = useState(false);
+  const [cvBlobUrl, setCvBlobUrl] = useState('');
+  const [cvBlobLoading, setCvBlobLoading] = useState(false);
 
   const navigate = useNavigate();
 
@@ -81,10 +84,16 @@ function Profile() {
     fetchProfile();
   }, [navigate]);
 
+  useEffect(() => {
+    return () => {
+      if (cvBlobUrl) URL.revokeObjectURL(cvBlobUrl);
+    };
+  }, [cvBlobUrl]);
+
   const handleUpdateField = async (fieldName, updatedValue) => {
     const updatedData = { ...profileData, [fieldName]: updatedValue };
     try {
-      const user = await checkToken(); // Kiểm tra token trước khi gửi request
+      const user = await checkToken();
       if (!user) { navigate('/login'); return; }
       await api.put(`/profile/${user.id}/${profileData.role}`, updatedData);
       setNotify({ type: 'success', msg: 'Đã lưu thay đổi!' });
@@ -95,20 +104,6 @@ function Profile() {
       setNotify({ type: 'error', msg: 'Lỗi lưu dữ liệu!' });
     }
   };
-
-  const [cvFile, setCvFile] = useState(null);
-  const [uploadingCv, setUploadingCv] = useState(false);
-
-  // --- Blob CV (Hướng B: lấy file qua axios kèm token, không gọi thẳng URL) ---
-  const [cvBlobUrl, setCvBlobUrl] = useState('');
-  const [cvBlobLoading, setCvBlobLoading] = useState(false);
-
-  // Dọn dẹp object URL khi unmount để tránh rò rỉ bộ nhớ
-  useEffect(() => {
-    return () => {
-      if (cvBlobUrl) URL.revokeObjectURL(cvBlobUrl);
-    };
-  }, [cvBlobUrl]);
 
   const handleCvChange = (e) => {
     const file = e.target.files[0];
@@ -148,7 +143,6 @@ function Profile() {
       setNotify({ type: 'success', msg: 'Tải CV lên thành công!' });
       setCvFile(null);
 
-      // CV vừa đổi thì blob cũ (nếu đang mở) không còn hợp lệ nữa
       if (cvBlobUrl) {
         URL.revokeObjectURL(cvBlobUrl);
         setCvBlobUrl('');
@@ -161,7 +155,6 @@ function Profile() {
     }
   };
 
-  // Lấy CV dưới dạng blob qua axios (tự động đính token như các API khác)
   const fetchCvBlob = async () => {
     if (!profileData?.cvFileName) return null;
     const user = await checkToken();
@@ -185,7 +178,6 @@ function Profile() {
     setCvBlobLoading(false);
     if (!blob) return;
 
-    // Ép đúng mime type PDF để iframe render đúng, tránh browser đoán sai
     const pdfBlob = new Blob([blob], { type: 'application/pdf' });
     if (cvBlobUrl) URL.revokeObjectURL(cvBlobUrl);
     const url = URL.createObjectURL(pdfBlob);
@@ -215,7 +207,6 @@ function Profile() {
     URL.revokeObjectURL(url);
   };
 
-
   const handleVerifySingleField = async (fieldType, value) => {
     if (!value?.trim()) {
       alert("Điền dữ liệu vào ô trước khi quét!");
@@ -228,7 +219,6 @@ function Profile() {
       const user = await checkToken();
       if (!user) { navigate('/login'); return; }
 
-      // Đồng bộ trước khi quét
       const updatedData = { ...profileData, [fieldType]: value };
       await api.put(`/profile/${user.id}/${profileData.role}`, updatedData);
 
@@ -240,9 +230,9 @@ function Profile() {
       if (response.data && response.data.status === "SUCCESS") {
         const reload = await api.get(`/profile/${user.id}/${profileData.role}`);
         setProfileData(reload.data);
-        setNotify({ type: 'success', msg: `✅duyệt thành công!` });
+        setNotify({ type: 'success', msg: `✅ Duyệt thành công!` });
       } else {
-        setNotify({ type: 'error', msg: `❌Từ chối: ${response.data.reason || 'Dữ liệu không khớp'}` });
+        setNotify({ type: 'error', msg: `❌ Từ chối: ${response.data.reason || 'Dữ liệu không khớp'}` });
       }
     } catch (err) {
       setNotify({ type: 'error', msg: 'Lỗi hệ thống!' });
@@ -252,42 +242,6 @@ function Profile() {
     }
   };
 
-  const renderStatusBadge = (status) => {
-    if (!status || status === 'pending') return { class: 'status-default', text: 'Chưa xác thực trường nào (60đ)' };
-    let parts = [];
-    if (status.includes('name')) parts.push('Tên cty');
-    if (status.includes('tax')) parts.push('Mã số thuế');
-    if (status.includes('website')) parts.push('Website');
-    if (parts.length === 3) return { class: 'status-approved', text: 'Đã xác thực toàn bộ AI (100đ)' };
-    return { class: 'status-pending', text: `Xác thực một phần (Duyệt: ${parts.join(', ')})` };
-  };
-
-  if (loading) return <div className="profile-loading">Đang tải...</div>;
-  if (!profileData) return null;
-
-  const isRecruiter = profileData.role === 'recruiter';
-
-  const badge = renderStatusBadge(profileData.status);
-  const isNameVerified = profileData.status?.includes('name');
-  const isTaxVerified = profileData.status?.includes('tax');
-  const isWebVerified = profileData.status?.includes('website');
-
-  // Điều kiện để kích hoạt nút
-  const canVerifyTax = !!profileData.companyName;
-  const canVerifyWeb = !!profileData.companyName && !!profileData.taxCode;
-
-  // Cảnh báo điểm tin cậy thấp, chỉ hiển thị, không chặn thao tác
-  const currentPoint = profileData.point ?? 80;
-  const isLowTrust = isRecruiter && currentPoint <= 90;
-
-  // Hiển thị CV: không còn dùng URL trực tiếp (cvUrl) vì route yêu cầu token,
-  // giờ lấy file qua axios (fetchCvBlob) rồi tạo blob URL tạm để xem/tải.
-  const cvExt = profileData.cvFileName
-    ? profileData.cvFileName.substring(profileData.cvFileName.lastIndexOf('.')).toLowerCase()
-    : '';
-  const isCvPdf = cvExt === '.pdf';
-
-
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     if (!passWordData.oldPassword || !passWordData.newPassword || !passWordData.confirmPassword) {
@@ -295,11 +249,11 @@ function Profile() {
       return;
     }
     if(passWordData.newPassword !== passWordData.confirmPassword) {
-      setNotify({ type: 'error', msg: 'Mật khẩu mới và xác nhận mật khẩu không khớp!' });
+      setNotify({ type: 'error', msg: 'Mật khẩu mới và xác nhận không khớp!' });
       return;
     }
     if(passWordData.newPassword.length < 6) {
-      setNotify({ type: 'error', msg: 'Mật khẩu mới phải có ít nhất 6 ký tự!' });
+      setNotify({ type: 'error', msg: 'Mật khẩu mới phải từ 6 ký tự!' });
       return;
     }
     setPassWordLoading(true);
@@ -307,7 +261,10 @@ function Profile() {
       const user = await checkToken();
       if (!user) { navigate('/login'); return; }
 
-      await api.post(`/profile/change-password/${user.id}`, {oldPassword: passWordData.oldPassword, newPassword: passWordData.newPassword});
+      await api.post(`/profile/change-password/${user.id}`, {
+        oldPassword: passWordData.oldPassword, 
+        newPassword: passWordData.newPassword
+      });
       setPassWordData({oldPassword: '', newPassword: '', confirmPassword: ''});
       setShowPasswordModal(false);
       setNotify({ type: 'success', msg: 'Đổi mật khẩu thành công!' });
@@ -319,180 +276,219 @@ function Profile() {
       setPassWordLoading(false);
     }
   };
+
+  const renderStatusBadge = (status) => {
+    if (!status || status === 'pending') return { class: 'status-default', text: 'Chưa xác thực (60đ)' };
+    let parts = [];
+    if (status.includes('name')) parts.push('Tên');
+    if (status.includes('tax')) parts.push('Thuế');
+    if (status.includes('website')) parts.push('Web');
+    if (parts.length === 3) return { class: 'status-approved', text: 'Đã xác thực toàn bộ (100đ) ✓' };
+    return { class: 'status-pending', text: `Xác thực 1 phần (${parts.join(',')})` };
+  };
+
+  if (loading) return <div className="profile-wrapper"><div style={{textAlign: 'center', padding: '40px'}}>Đang tải dữ liệu...</div></div>;
+  if (!profileData) return null;
+
+  const isRecruiter = profileData.role === 'recruiter';
+  const badge = renderStatusBadge(profileData.status);
+  
+  const isNameVerified = profileData.status?.includes('name');
+  const isTaxVerified = profileData.status?.includes('tax');
+  const isWebVerified = profileData.status?.includes('website');
+  
+  const canVerifyTax = !!profileData.companyName;
+  const canVerifyWeb = !!profileData.companyName && !!profileData.taxCode;
+  
+  const currentPoint = profileData.point ?? 80;
+  const isLowTrust = isRecruiter && currentPoint <= 90;
+
+  const cvExt = profileData.cvFileName ? profileData.cvFileName.substring(profileData.cvFileName.lastIndexOf('.')).toLowerCase() : '';
+  const isCvPdf = cvExt === '.pdf';
+
   return (
     <div className="profile-wrapper">
-      <div className="profile-header">
-        <h2>{isRecruiter ? 'HỒ SƠ NHÀ TUYỂN DỤNG' : 'HỒ SƠ ỨNG VIÊN'}</h2>
-        
-        {isRecruiter && (
-          <span className={`status-badge ${badge.class}`}>Trạng thái: {badge.text}</span>
-        )}
+      
+      {/* Header Profile Glass */}
+      <div className="profile-header-glass">
+        <div className="profile-avatar-placeholder">
+          {profileData.name ? profileData.name.charAt(0).toUpperCase() : 'U'}
+        </div>
+        <div className="profile-header-info">
+          <h2>{isRecruiter ? 'Hồ Sơ Nhà Tuyển Dụng' : 'Hồ Sơ Ứng Viên'}</h2>
+          <div className="profile-email">{profileData.email}</div>
+          {isRecruiter && (
+            <span className={`status-badge-glass ${badge.class}`}>{badge.text}</span>
+          )}
+        </div>
       </div>
 
-      {notify.msg && <div className={`notify-box nt-${notify.type}`}>{notify.msg}</div>}
+      {!showPasswordModal && notify.msg && (
+        <div className={`notify-box nt-${notify.type}`}>
+          {notify.type === 'success' && '✅ '}
+          {notify.type === 'error' && '❌ '}
+          {notify.type === 'info' && 'ℹ️ '}
+          {notify.msg}
+        </div>
+      )}
 
       {isLowTrust && (
         <div className="trust-warning-banner">
-          ⚠️ Điểm tin cậy hiện tại: <strong>{currentPoint}đ</strong> — Vui lòng cung cấp đầy đủ và xác thực thông tin doanh nghiệp (Tên công ty, Mã số thuế, Website) để tránh ảnh hưởng đến việc đăng tin tuyển dụng.
+          <strong>⚠️ Điểm tin cậy: {currentPoint}đ</strong> — Cần cung cấp đầy đủ thông tin doanh nghiệp (Tên công ty, Mã số thuế, Website) và vượt qua xác thực AI để đảm bảo đăng tin tuyển dụng không bị hạn chế.
         </div>
       )}
 
-      <div className="profile-body" style={{ paddingTop: (notify.msg || isLowTrust) ? 0 : 25 }}>
-        <div className="account-info-grid">
-          <ReadOnlyField label="Tên tài khoản" value={profileData.name} />
-          <ReadOnlyField label="Email đăng ký" value={profileData.email} />
-          <ReadOnlyField label="Vai trò" value={profileData.role === "candidate" ? "Ứng viên" : "Nhà tuyển dụng"} />
-          <button 
-            className="mini-verify-btn" 
-            style={{ backgroundColor: '#6c757d', color: '#fff' }} 
-            onClick={() => setShowPasswordModal(true)}
-          >
-            🔒 Đổi mật khẩu
-          </button>
-          {isRecruiter && <ReadOnlyField label="Email công ty" value={profileData.companyEmail} />}
+      {/* Main Content Grid */}
+      <div className="profile-grid">
+        
+        {/* Card 1: Account Information */}
+        <div className="profile-card">
+          <h3>Thông tin tài khoản</h3>
+          <div>
+            <ReadOnlyField label="Tên tài khoản" value={profileData.name} icon="👤" />
+            <ReadOnlyField label="Email đăng ký" value={profileData.email} icon="✉️" />
+            <ReadOnlyField label="Vai trò" value={isRecruiter ? "Nhà tuyển dụng" : "Ứng viên"} icon="🛡️" />
+            {isRecruiter && <ReadOnlyField label="Email công ty" value={profileData.companyEmail} icon="🏢" />}
+            
+            <button 
+              className="glass-btn btn-secondary mt-3" 
+              onClick={() => { setShowPasswordModal(true); setNotify({ type: '', msg: '' }); }}
+              style={{ width: '100%' }}
+            >
+              🔐 Thay đổi mật khẩu
+            </button>
+          </div>
         </div>
 
-        {isRecruiter ? (
-          <>
-            <div className="verify-row-layout" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', marginBottom: '20px' }}>
-              <EditableField label="Tên công ty" value={profileData.companyName} onSave={(val) => handleUpdateField('companyName', val)} />
-              <button className="mini-verify-btn" onClick={() => handleVerifySingleField('companyName', profileData.companyName)} disabled={!!aiLoadingField}>
-                {aiLoadingField === 'companyName' ? '⏳...' : (isNameVerified ? '✅ Đã duyệt' : '✓ Duyệt Tên')}
-              </button>
-            </div>
+        {/* Card 2: Verification / Contact */}
+        <div className="profile-card">
+          <h3>{isRecruiter ? 'Xác thực doanh nghiệp (AI)' : 'Thông tin liên hệ & CV'}</h3>
+          
+          {isRecruiter ? (
+            <div>
+              <div className="verify-row-layout">
+                <EditableField label="Tên công ty" value={profileData.companyName} onSave={(val) => handleUpdateField('companyName', val)} icon="🏢" />
+                <button className="glass-btn btn-primary" onClick={() => handleVerifySingleField('companyName', profileData.companyName)} disabled={!!aiLoadingField}>
+                  {aiLoadingField === 'companyName' ? '⏳...' : (isNameVerified ? '✅ Đã duyệt' : 'Duyệt')}
+                </button>
+              </div>
 
-            <div className="verify-row-layout" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', marginBottom: '20px' }}>
-              <EditableField label="Mã số thuế" value={profileData.taxCode} onSave={(val) => handleUpdateField('taxCode', val)} />
-              <button className="mini-verify-btn" onClick={() => handleVerifySingleField('taxCode', profileData.taxCode)} disabled={!canVerifyTax || !!aiLoadingField}>
-                {aiLoadingField === 'taxCode' ? '⏳...' : (isTaxVerified ? '✅ Đã duyệt' : '✓ Duyệt Thuế')}
-              </button>
-            </div>
+              <div className="verify-row-layout">
+                <EditableField label="Mã số thuế (MST)" value={profileData.taxCode} onSave={(val) => handleUpdateField('taxCode', val)} icon="📑" />
+                <button className="glass-btn btn-primary" onClick={() => handleVerifySingleField('taxCode', profileData.taxCode)} disabled={!canVerifyTax || !!aiLoadingField}>
+                  {aiLoadingField === 'taxCode' ? '⏳...' : (isTaxVerified ? '✅ Đã duyệt' : 'Duyệt')}
+                </button>
+              </div>
 
-            <div className="verify-row-layout" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', marginBottom: 0 }}>
-              <EditableField label="Website" value={profileData.websiteUrl} onSave={(val) => handleUpdateField('websiteUrl', val)} />
-              <button className="mini-verify-btn" onClick={() => handleVerifySingleField('websiteUrl', profileData.websiteUrl)} disabled={!canVerifyWeb || !!aiLoadingField}>
-                {aiLoadingField === 'websiteUrl' ? '⏳...' : (isWebVerified ? '✅ Đã duyệt' : '✓ Duyệt Web')}
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="verify-row-layout" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', marginBottom: '20px' }}>
-              <EditableField label="Số điện thoại" value={profileData.phone} onSave={(val) => handleUpdateField('phone', val)} />
-            </div>
-
-            <div className="verify-row-layout" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', marginBottom: 0 }}>
-              <EditableField label="Địa chỉ" value={profileData.address} onSave={(val) => handleUpdateField('address', val)} />
-            </div>
-            {/* --- Phần CV --- */}
-            <div className="cv-section" style={{ marginTop: '20px' }}>
-              <span className="field-label">CV hiện tại:</span>
-
-              {profileData.cvFileName ? (
-                <div className="cv-current-display" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
-                  {isCvPdf ? (
-                    <button type="button" className="cv-link" onClick={openCvPreview} disabled={cvBlobLoading}>
-                      {cvBlobLoading ? '⏳ Đang tải...' : '📄 Xem CV đã tải lên'}
-                    </button>
-                  ) : (
-                    <button type="button" className="cv-link" onClick={downloadCvWord} disabled={cvBlobLoading}>
-                      {cvBlobLoading ? '⏳ Đang tải...' : '📄 Tải xuống để xem CV (Word)'}
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className="field-empty" style={{ marginTop: '8px' }}>
-                  (Chưa có CV nào được tải lên)
-                </div>
-              )}
-
-              <div className="cv-upload-row" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px' }}>
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  onChange={handleCvChange}
-                  id="cv-file-input"
-                  style={{ display: 'none' }}
-                />
-                <label htmlFor="cv-file-input" className="cv-choose-btn" style={{ cursor: 'pointer' }}>
-                  📎 Chọn file CV
-                </label>
-
-                {cvFile && <span className="cv-filename">{cvFile.name}</span>}
-
-                <button
-                  className="mini-verify-btn"
-                  onClick={handleUploadCv}
-                  disabled={!cvFile || uploadingCv}
-                >
-                  {uploadingCv ? '⏳ Đang tải...' : 'Tải lên'}
+              <div className="verify-row-layout">
+                <EditableField label="Website công ty" value={profileData.websiteUrl} onSave={(val) => handleUpdateField('websiteUrl', val)} icon="🌐" />
+                <button className="glass-btn btn-primary" onClick={() => handleVerifySingleField('websiteUrl', profileData.websiteUrl)} disabled={!canVerifyWeb || !!aiLoadingField}>
+                  {aiLoadingField === 'websiteUrl' ? '⏳...' : (isWebVerified ? '✅ Đã duyệt' : 'Duyệt')}
                 </button>
               </div>
             </div>
-            
-          </>
-        )}
-      </div>
-      {showCvPreview && (
-        <div className="cv-preview-overlay" onClick={closeCvPreview}>
-          <div className="cv-preview-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="cv-preview-header">
-              <span>Xem CV</span>
-              <button className="cv-preview-close" onClick={closeCvPreview}>✕</button>
-            </div>
-            {cvBlobUrl && <iframe src={cvBlobUrl} title="CV Preview" className="cv-preview-frame" />}
-          </div>
-        </div>
-      )}
+          ) : (
+            <div>
+              <EditableField label="Số điện thoại" value={profileData.phone} onSave={(val) => handleUpdateField('phone', val)} icon="📞" />
+              <EditableField label="Địa chỉ" value={profileData.address} onSave={(val) => handleUpdateField('address', val)} icon="📍" />
+              
+              <div className="cv-section-modern">
+                <span className="field-label-modern">📎 CV đính kèm:</span>
+                
+                {profileData.cvFileName ? (
+                  <div style={{ marginTop: '10px', marginBottom: '16px' }}>
+                    {isCvPdf ? (
+                      <button type="button" className="cv-link" onClick={openCvPreview} disabled={cvBlobLoading}>
+                        {cvBlobLoading ? '⏳ Đang tải bản xem trước...' : '📄 Xem CV hiện tại (PDF)'}
+                      </button>
+                    ) : (
+                      <button type="button" className="cv-link" onClick={downloadCvWord} disabled={cvBlobLoading}>
+                        {cvBlobLoading ? '⏳ Đang tải file...' : '📄 Tải xuống CV (Word)'}
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="field-empty" style={{ margin: '8px 0 16px' }}>
+                    (Chưa có CV nào được tải lên)
+                  </div>
+                )}
 
-      {/* --- Modal Đổi Mật Khẩu --- */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={handleCvChange}
+                    id="cv-file-input"
+                    style={{ display: 'none' }}
+                  />
+                  <label htmlFor="cv-file-input" className="cv-choose-btn">
+                    Tải file mới...
+                  </label>
+                  {cvFile && <span className="cv-filename" title={cvFile.name}>{cvFile.name}</span>}
+                  
+                  <button
+                    className="glass-btn btn-primary"
+                    onClick={handleUploadCv}
+                    disabled={!cvFile || uploadingCv}
+                    style={{ marginLeft: 'auto', padding: '8px 16px', height: '40px' }}
+                  >
+                    {uploadingCv ? '⏳...' : 'Lưu CV'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Password Modal */}
       {showPasswordModal && (
-        <div className="cv-preview-overlay" onClick={() => setShowPasswordModal(false)}>
+        <div className="cv-preview-overlay" onClick={() => { setShowPasswordModal(false); setNotify({ type: '', msg: '' }); }}>
           <div className="cv-preview-modal" 
-                style={{ maxWidth: '400px',
-                  width: '90%',
-                  height: 'auto',
-                  minHeight: 'unset',
-                  maxHeight: '90vh',
-                  overflowY: 'auto', }} 
+                style={{ maxWidth: '420px', height: 'auto', padding: '0 0 20px 0' }} 
                 onClick={(e) => e.stopPropagation()}>
             <div className="cv-preview-header">
-              <span>Đổi Mật Khẩu</span>
-              <button className="cv-preview-close" onClick={() => setShowPasswordModal(false)}>✕</button>
+              <span style={{ fontSize: '18px' }}>Đổi Mật Khẩu</span>
+              <button className="cv-preview-close" onClick={() => { setShowPasswordModal(false); setNotify({ type: '', msg: '' }); }}>✕</button>
             </div>
-            {notify.msg && <div className={`notify-box nt-${notify.type}`} style={{ margin: '10px 20px 0' }}>{notify.msg}</div>}
-
-            <form onSubmit={handlePasswordChange} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <label className="field-label" style={{ fontSize: '14px' }}>Mật khẩu hiện tại:</label>
+            
+            {notify.msg && (
+              <div className={`notify-box nt-${notify.type}`} style={{ margin: '20px 24px 0', marginBottom: '-4px' }}>
+                {notify.type === 'success' && '✅ '}
+                {notify.type === 'error' && '❌ '}
+                {notify.type === 'info' && 'ℹ️ '}
+                {notify.msg}
+              </div>
+            )}
+            
+            <form onSubmit={handlePasswordChange} style={{ padding: '24px 24px 0', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <div>
+                <label className="field-label-modern">Mật khẩu hiện tại</label>
                 <input
                   type="password"
-                  className="field-input"
-                  style={{ width: '100%', boxSizing: 'border-box' }}
+                  className="field-input-modern"
                   value={passWordData.oldPassword}
                   onChange={(e) => setPassWordData({ ...passWordData, oldPassword: e.target.value })}
                   required
                 />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <label className="field-label" style={{ fontSize: '14px' }}>Mật khẩu mới:</label>
+              <div>
+                <label className="field-label-modern">Mật khẩu mới</label>
                 <input
                   type="password"
-                  className="field-input"
-                  style={{ width: '100%', boxSizing: 'border-box' }}
+                  className="field-input-modern"
                   value={passWordData.newPassword}
                   onChange={(e) => setPassWordData({ ...passWordData, newPassword: e.target.value })}
                   required
                 />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <label className="field-label" style={{ fontSize: '14px' }}>Xác nhận mật khẩu mới:</label>
+              <div>
+                <label className="field-label-modern">Xác nhận mật khẩu</label>
                 <input
                   type="password"
-                  className="field-input"
-                  style={{ width: '100%', boxSizing: 'border-box' }}
+                  className="field-input-modern"
                   value={passWordData.confirmPassword}
                   onChange={(e) => setPassWordData({ ...passWordData, confirmPassword: e.target.value })}
                   required
@@ -501,16 +497,30 @@ function Profile() {
 
               <button 
                 type="submit" 
-                className="mini-verify-btn" 
-                style={{ width: '100%', padding: '10px', marginTop: '10px', height: 'auto' }}
+                className="glass-btn btn-primary" 
+                style={{ width: '100%', marginTop: '8px', padding: '12px' }}
                 disabled={passWordLoading}
               >
-                {passWordLoading ? '⏳ Đang xử lý...' : 'Cập nhật mật khẩu'}
+                {passWordLoading ? '⏳ Đang xử lý...' : 'Lưu Thay Đổi'}
               </button>
             </form>
           </div>
         </div>
       )}
+
+      {/* CV Preview Modal */}
+      {showCvPreview && (
+        <div className="cv-preview-overlay" onClick={closeCvPreview}>
+          <div className="cv-preview-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="cv-preview-header">
+              <span style={{ fontSize: '18px' }}>Xem trước CV</span>
+              <button className="cv-preview-close" onClick={closeCvPreview}>✕</button>
+            </div>
+            {cvBlobUrl && <iframe src={cvBlobUrl} title="CV Preview" className="cv-preview-frame" />}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

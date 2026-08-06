@@ -97,9 +97,6 @@ function Navbar() {
                       <span className="user-dropdown-icon">📊</span> Quản lý bài đăng
                     </Link>
                   )}
-                  <Link to="/settings" className="user-dropdown-item">
-                    <span className="user-dropdown-icon">⚙️</span> Cài đặt tài khoản
-                  </Link>
                 </div>
                 
                 <div className="user-dropdown-footer">
