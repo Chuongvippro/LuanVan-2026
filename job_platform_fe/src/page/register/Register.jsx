@@ -113,10 +113,15 @@ function Register() {
       return;
     }
 
+    // Kiểm tra độ mạnh của mật khẩu
     const minLength = /^.{8,}$/;
+    // Kiểm tra có ít nhất 1 chữ hoa
     const hasUpper = /[A-Z]/;
+    // Kiểm tra có ít nhất 1 chữ thường
     const hasLower = /[a-z]/;
+    // Kiểm tra có ít nhất 1 chữ số
     const hasNumber = /[0-9]/;
+    // Kiểm tra có ít nhất 1 ký tự đặc biệt
     const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/;
 
     if (!minLength.test(formData.password)) {

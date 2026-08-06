@@ -11,6 +11,10 @@ function Home() {
   const [stats, setStats] = useState({ totalJobs: 0, totalCompanies: 0, totalApplications: 0 });
   const [showAllIndustries, setShowAllIndustries] = useState(false);
   
+  // State xem CV mẫu
+  const [showCvModal, setShowCvModal] = useState(false);
+  const mauCvUrl = '/cv/maucv.pdf';
+
   // State lưu danh sách Nhà tuyển dụng uy tín (Point = 100)
   const [trustedRecruiters, setTrustedRecruiters] = useState([]);
   
@@ -52,13 +56,12 @@ function Home() {
       }
     };
 
-    // Gọi API lấy danh sách nhà tuyển dụng uy tín và chỉ lấy tối đa 3 item
     const fetchTrustedRecruiters = async () => {
       try {
         const res = await api.get('/auth/recruiters/trusted');
         if (res.data.success) {
           const list = res.data.data || [];
-          setTrustedRecruiters(list.slice(0, 3)); // ◄ Chỉ lấy 3 nhà tuyển dụng
+          setTrustedRecruiters(list.slice(0, 3));
         }
       } catch (err) {
         console.error('Failed to fetch trusted recruiters', err);
@@ -71,7 +74,6 @@ function Home() {
     fetchTrustedRecruiters();
   }, []);
 
-  // Calculate top employers dynamically from jobs
   const topEmployers = useMemo(() => {
     const employerMap = {};
     featuredJobs.forEach(job => {
@@ -111,7 +113,7 @@ function Home() {
         backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.9)), url('/images/hero_bg.png')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        padding: '80px 0 100px', /* Increased bottom padding for floating bar */
+        padding: '80px 0 100px',
         position: 'relative'
       }}>
         <div className="container" style={{ position: 'relative', zIndex: 2 }}>
@@ -185,7 +187,7 @@ function Home() {
       <section style={{
         position: 'relative',
         zIndex: 10,
-        marginTop: '-40px', /* Pulls the section up to overlap the hero */
+        marginTop: '-40px',
         marginBottom: '40px'
       }}>
         <div className="container">
@@ -202,66 +204,112 @@ function Home() {
           }}>
             {[
               { to: '/jobs', icon: '💼', label: 'Tìm việc thụ động', badge: { text: 'HOT', color: '#f59e0b', bg: '#fef3c7' } },
-              { to: '/jobs', icon: '📄', label: 'Mẫu CV chuẩn IT' },
-              { to: '/jobs', icon: '🏆', label: 'Story Hub', badge: { text: 'MỚI', color: '#10b981', bg: '#d1fae5' } },
+              { isCvSample: true, icon: '📄', label: 'Mẫu CV chuẩn IT' },
+
               { to: '/companies', icon: '💬', label: 'Review công ty' },
-              { to: '/jobs', icon: '📈', label: 'Báo cáo lương IT' },
+        
             ].map((item, idx) => (
-              <Link
-                key={idx}
-                to={item.to}
-                style={{
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  alignItems: 'center', 
-                  gap: '8px',
-                  textDecoration: 'none', 
-                  color: '#475569',
-                  fontWeight: '600', 
-                  fontSize: '14px',
-                  transition: 'all 0.3s ease',
-                  position: 'relative',
-                  flex: 1
-                }}
-                onMouseEnter={(e) => { 
-                  e.currentTarget.style.color = '#ed1b2f'; 
-                  e.currentTarget.style.transform = 'translateY(-4px)';
-                }}
-                onMouseLeave={(e) => { 
-                  e.currentTarget.style.color = '#475569'; 
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
-              >
-                <div style={{ 
-                  width: '48px', 
-                  height: '48px', 
-                  borderRadius: '12px', 
-                  background: '#f1f5f9', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  fontSize: '24px',
-                  marginBottom: '4px',
-                  transition: 'background 0.3s'
-                }} className="icon-box">
-                  {item.icon}
+              item.isCvSample ? (
+                <div
+                  key={idx}
+                  onClick={() => setShowCvModal(true)}
+                  style={{
+                    display: 'flex', 
+                    flexDirection: 'column',
+                    alignItems: 'center', 
+                    gap: '8px',
+                    color: '#475569',
+                    fontWeight: '600', 
+                    fontSize: '14px',
+                    transition: 'all 0.3s ease',
+                    position: 'relative',
+                    flex: 1,
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => { 
+                    e.currentTarget.style.color = '#ed1b2f'; 
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                  }}
+                  onMouseLeave={(e) => { 
+                    e.currentTarget.style.color = '#475569'; 
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <div style={{ 
+                    width: '48px', 
+                    height: '48px', 
+                    borderRadius: '12px', 
+                    background: '#f1f5f9', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    fontSize: '24px',
+                    marginBottom: '4px',
+                    transition: 'background 0.3s'
+                  }} className="icon-box">
+                    {item.icon}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {item.label}
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  {item.label}
-                  {item.badge && (
-                    <span style={{
-                      backgroundColor: item.badge.bg, 
-                      color: item.badge.color,
-                      fontSize: '10px', 
-                      padding: '2px 6px',
-                      borderRadius: '8px', 
-                      fontWeight: '800'
-                    }}>
-                      {item.badge.text}
-                    </span>
-                  )}
-                </div>
-              </Link>
+              ) : (
+                <Link
+                  key={idx}
+                  to={item.to}
+                  style={{
+                    display: 'flex', 
+                    flexDirection: 'column',
+                    alignItems: 'center', 
+                    gap: '8px',
+                    textDecoration: 'none', 
+                    color: '#475569',
+                    fontWeight: '600', 
+                    fontSize: '14px',
+                    transition: 'all 0.3s ease',
+                    position: 'relative',
+                    flex: 1
+                  }}
+                  onMouseEnter={(e) => { 
+                    e.currentTarget.style.color = '#ed1b2f'; 
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                  }}
+                  onMouseLeave={(e) => { 
+                    e.currentTarget.style.color = '#475569'; 
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <div style={{ 
+                    width: '48px', 
+                    height: '48px', 
+                    borderRadius: '12px', 
+                    background: '#f1f5f9', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    fontSize: '24px',
+                    marginBottom: '4px',
+                    transition: 'background 0.3s'
+                  }} className="icon-box">
+                    {item.icon}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {item.label}
+                    {item.badge && (
+                      <span style={{
+                        backgroundColor: item.badge.bg, 
+                        color: item.badge.color,
+                        fontSize: '10px', 
+                        padding: '2px 6px',
+                        borderRadius: '8px', 
+                        fontWeight: '800'
+                      }}>
+                        {item.badge.text}
+                      </span>
+                    )}
+                  </div>
+                </Link>
+              )
             ))}
           </div>
         </div>
@@ -406,7 +454,6 @@ function Home() {
                     background: 'linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%)',
                     flex: 1
                   }}>
-                    {/* Logo Box */}
                     <div style={{
                       width: '120px',
                       height: '120px',
@@ -426,12 +473,10 @@ function Home() {
                       )}
                     </div>
 
-                    {/* Company Name */}
                     <h3 style={{ textAlign: 'center', fontSize: '18px', marginTop: '24px', marginBottom: '16px', color: '#121212' }}>
                       {emp.name}
                     </h3>
 
-                    {/* Skill Tags */}
                     <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px' }}>
                       {emp.skills.map((skill, idx) => (
                         <span key={idx} style={{
@@ -447,7 +492,6 @@ function Home() {
                     </div>
                   </div>
 
-                  {/* Footer Line */}
                   <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -478,7 +522,7 @@ function Home() {
         </div>
       </section>
 
-      {/* TRUSTED EMPLOYERS SECTION (POINT === 100) */}
+      {/* TRUSTED EMPLOYERS SECTION */}
       <section style={{ padding: '60px 0', backgroundColor: '#fafafa', borderTop: '1px solid #e5e5e5' }}>
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
@@ -505,7 +549,6 @@ function Home() {
                     height: '100%',
                     position: 'relative'
                   }}>
-                    {/* Badge Điểm Uy Tín góc phải */}
                     <div style={{
                       position: 'absolute',
                       top: '12px',
@@ -529,7 +572,6 @@ function Home() {
                       background: 'linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%)',
                       flex: 1
                     }}>
-                      {/* Logo Box */}
                       <div style={{
                         width: '120px',
                         height: '120px',
@@ -549,19 +591,16 @@ function Home() {
                         )}
                       </div>
 
-                      {/* Company Name */}
                       <h3 style={{ textAlign: 'center', fontSize: '18px', marginTop: '24px', marginBottom: '8px', color: '#121212' }}>
                         {emp.companyName}
                       </h3>
 
-                      {/* Verified Badge Subtitle */}
                       <div style={{ textAlign: 'center', marginBottom: '16px' }}>
                         <span style={{ fontSize: '13px', color: '#00b14f', fontWeight: '600' }}>
                           ✓ Đã xác minh (Verified)
                         </span>
                       </div>
 
-                      {/* Info / Email Tag */}
                       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px' }}>
                         <span style={{
                           padding: '6px 16px',
@@ -575,7 +614,6 @@ function Home() {
                       </div>
                     </div>
 
-                    {/* Footer Line */}
                     <div style={{
                       display: 'flex',
                       justifyContent: 'space-between',
@@ -629,6 +667,19 @@ function Home() {
           </div>
         </div>
       </section>
+
+      {/* MODAL PREVIEW CV MẪU */}
+      {showCvModal && (
+        <div className="cv-preview-overlay" onClick={() => setShowCvModal(false)}>
+          <div className="cv-preview-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="cv-preview-header">
+              <span style={{ fontSize: '18px', fontWeight: '600' }}>Xem trước Mẫu CV chuẩn IT</span>
+              <button className="cv-preview-close" onClick={() => setShowCvModal(false)}>✕</button>
+            </div>
+            <iframe src={mauCvUrl} title="Mẫu CV Preview" className="cv-preview-frame" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

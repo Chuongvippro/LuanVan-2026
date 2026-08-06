@@ -89,14 +89,13 @@ public class ProfileController {
     @PostMapping("/change-password/{userId}")
     public ResponseEntity<?> changePassWord(@PathVariable Integer userId, @RequestBody Map<String, String> request) {
         try{
-        String oldPassword = request.get("oldPassword");
-        String newPassword = request.get("newPassword");
-
-        profileService.changePassword(userId, oldPassword, newPassword);
-        return ResponseEntity.ok("Đổi mật khẩu thành công!");
-        } catch (Exception e) {
+            profileService.changePassword(userId, request.get("oldPassword"), request.get("newPassword"));
+            return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công!"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }catch (Exception e) { 
             e.printStackTrace();
-            return ResponseEntity.internalServerError().body("Lỗi đổi mật khẩu!");
+            return ResponseEntity.internalServerError().body(Map.of("message", "Lỗi đổi mật khẩu!"));
         }
     }
 }

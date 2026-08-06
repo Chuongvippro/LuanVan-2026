@@ -224,13 +224,13 @@ public class ProfileService {
     }
 
     public void changePassword(Integer userId, String oldPassword, String newPassword) throws Exception {
-        User user = userRepository.findById(userId).orElseThrow(()-> new Exception("User not found"));
+        User user = userRepository.findById(userId).orElseThrow(()-> new IllegalArgumentException("Tài khoản không tồn tại"));
 
         if(!passwordEncoder.matches(oldPassword, user.getPassword())) {
-            throw new Exception("Mật khẩu không đúng");
+            throw new IllegalArgumentException("Mật khẩu không đúng");
         }
         if(passwordEncoder.matches(newPassword, user.getPassword())) {
-            throw new Exception("Mật khẩu mới không được trùng mật khẩu cũ");
+            throw new IllegalArgumentException("Mật khẩu mới không được trùng mật khẩu cũ");
         }
 
         String hasStringgNewPassword = passwordEncoder.encode(newPassword);

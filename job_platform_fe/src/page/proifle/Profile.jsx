@@ -207,6 +207,7 @@ function Profile() {
     URL.revokeObjectURL(url);
   };
 
+  // Function to handle verification of a single field using AI
   const handleVerifySingleField = async (fieldType, value) => {
     if (!value?.trim()) {
       alert("Điền dữ liệu vào ô trước khi quét!");
@@ -227,12 +228,26 @@ function Profile() {
         value: value
       });
 
-      if (response.data && response.data.status === "SUCCESS") {
+      const reason = response.data?.reason || response.data?.message || '';
+
+      // 1. ƯU TIÊN BẮT LỖI CÀO WEB / CHỜ ADMIN DUYỆT TAY TRƯỚC
+      if (reason.includes("chặn truy cập") || reason.includes("chờ admin") || reason.includes("thủ công") || reason.includes("Chờ admin")) {
+        const reload = await api.get(`/profile/${user.id}/${profileData.role}`);
+        setProfileData(reload.data);
+        setNotify({ 
+          type: 'info', 
+          msg: `ℹ️ Website chặn bot cào dữ liệu tự động. Hệ thống đã lưu yêu cầu, vui lòng chờ Admin kiểm duyệt thủ công!` 
+        });
+      } 
+      // 2. NẾU KHÔNG BỊ WAF CHẶN THÌ MỚI ĐÁNH GIÁ THÀNH CÔNG THẬT SỰ
+      else if (response.data && response.data.status === "SUCCESS") {
         const reload = await api.get(`/profile/${user.id}/${profileData.role}`);
         setProfileData(reload.data);
         setNotify({ type: 'success', msg: `✅ Duyệt thành công!` });
-      } else {
-        setNotify({ type: 'error', msg: `❌ Từ chối: ${response.data.reason || 'Dữ liệu không khớp'}` });
+      } 
+      // 3. TỪ CHỐI DO DỮ LIỆU SAI LỆCH
+      else {
+        setNotify({ type: 'error', msg: `❌ Từ chối: ${reason || 'Dữ liệu không khớp'}` });
       }
     } catch (err) {
       setNotify({ type: 'error', msg: 'Lỗi hệ thống!' });
@@ -282,9 +297,15 @@ function Profile() {
     let parts = [];
     if (status.includes('name')) parts.push('Tên');
     if (status.includes('tax')) parts.push('Thuế');
-    if (status.includes('website')) parts.push('Web');
+    const hasWebApproved = status.includes('website') && !status.includes('website_pending');
+    if (hasWebApproved) parts.push('Web');
+
     if (parts.length === 3) return { class: 'status-approved', text: 'Đã xác thực toàn bộ (100đ) ✓' };
-    return { class: 'status-pending', text: `Xác thực 1 phần (${parts.join(',')})` };
+    
+    // Nếu dính website_pending thì hiển thị thông báo riêng trên badge
+    if (status.includes('website_pending')) {
+      return { class: 'status-pending', text: `Đang chờ Admin duyệt Web (${profileData?.point ?? 90}đ)` };
+    }
   };
 
   if (loading) return <div className="profile-wrapper"><div style={{textAlign: 'center', padding: '40px'}}>Đang tải dữ liệu...</div></div>;
